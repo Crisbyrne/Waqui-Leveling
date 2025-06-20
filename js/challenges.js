@@ -37,38 +37,54 @@ class ChallengeManager {
         return challenge;
     }
 
-    updateProgress(challengeId, progress, date = new Date()) {
-        const challenge = this.challenges.find(c => c.id === challengeId);
+    updateProgress(challengeId) {
+        const challenge = this.getChallenge(challengeId);
         if (!challenge) {
-            throw new Error('Reto no encontrado');
+            alert('Reto no encontrado o no tienes permiso para modificarlo');
+            return;
         }
 
-        const user = app.getCurrentUser();
-        if (!user || challenge.userId !== user.id) {
-            throw new Error('No tienes permiso para actualizar este reto');
+        const progress = prompt(`Ingresa el nuevo progreso para ${challenge.name} (${challenge.unit}):`);
+        if (progress === null) return;
+
+        const newProgress = parseFloat(progress);
+        if (isNaN(newProgress)) {
+            alert('Por favor ingresa un número válido');
+            return;
         }
 
-        // Registrar progreso en el historial
-        challenge.history.push({
-            date: date.toISOString(),
-            progress: parseFloat(progress)
-        });
-
-        // Actualizar progreso actual
-        challenge.progress = parseFloat(progress);
-
-        this.saveChanges();
+        try {
+            challenge.progress = newProgress;
+            challenge.history.push({
+                date: new Date().toISOString(),
+                progress: newProgress
+            });
+            
+            this.saveChanges();
+            app.loadDashboard(); // Actualizar el dashboard después de cambiar el progreso
+            
+        } catch (error) {
+            alert('Error al actualizar el progreso: ' + error.message);
+        }
     }
 
     getUserChallenges() {
         const user = app.getCurrentUser();
-        if (!user) return [];
+        if (!user || !user.id) return [];
 
-        return this.challenges.filter(challenge => challenge.userId === user.id);
+        // Ensure we're strictly comparing IDs
+        return this.challenges.filter(challenge => {
+            return challenge.userId && challenge.userId === user.id;
+        });
     }
 
     getChallenge(challengeId) {
-        return this.challenges.find(c => c.id === challengeId);
+        const user = app.getCurrentUser();
+        if (!user || !user.id) return null;
+
+        const challenge = this.challenges.find(c => c.id === challengeId);
+        // Only return the challenge if it belongs to the current user
+        return challenge && challenge.userId === user.id ? challenge : null;
     }
 
     deleteChallenge(challengeId) {
@@ -124,8 +140,7 @@ function handleProgressUpdate(challengeId) {
     if (progress === null) return;
 
     try {
-        challengeManager.updateProgress(challengeId, progress);
-        app.loadDashboard();
+        challengeManager.updateProgress(challengeId);
     } catch (error) {
         alert(error.message);
     }

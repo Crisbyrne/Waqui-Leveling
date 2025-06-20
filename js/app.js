@@ -5,9 +5,20 @@ class App {
     }
 
     loadDashboard() {
-        const challenges = this.getChallenges();
+        const challenges = challengeManager.getUserChallenges();
         const container = document.querySelector('.challenges-container');
         if (!container) return;
+
+        if (challenges.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No tienes retos activos</h3>
+                    <p>¡Comienza creando tu primer reto!</p>
+                    <button onclick="router.navigate('new-challenge')" class="btn primary">Crear Reto</button>
+                </div>
+            `;
+            return;
+        }
 
         container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
     }
@@ -71,16 +82,26 @@ class App {
 
     createChallengeCard(challenge) {
         const progress = this.calculateProgress(challenge);
+        const currentProgress = challenge.progress || 0;
+        const status = progress >= 100 ? 'Completado' : 'En progreso';
+        const statusClass = progress >= 100 ? 'status-completed' : 'status-in-progress';
+        
         return `
             <div class="challenge-card">
-                <h3>${challenge.name}</h3>
+                <div class="challenge-header">
+                    <h3>${challenge.name}</h3>
+                    <span class="challenge-status ${statusClass}">${status}</span>
+                </div>
                 <p>${challenge.description}</p>
                 <div class="progress-bar">
                     <div class="progress-bar-fill" style="width: ${progress}%"></div>
                 </div>
-                <p>Progreso: ${progress}%</p>
-                <p>Meta: ${challenge.goal} ${challenge.unit}</p>
-                <button onclick="app.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
+                <div class="challenge-details">
+                    <p class="progress-text">Progreso actual: ${currentProgress} ${challenge.unit}</p>
+                    <p class="goal-text">Meta: ${challenge.goal} ${challenge.unit}</p>
+                    <p class="percentage-text">Completado: ${progress}%</p>
+                </div>
+                <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
             </div>
         `;
     }
@@ -113,7 +134,7 @@ class App {
     }
 
     getChallenges() {
-        return this.challenges;
+        return challengeManager.getUserChallenges();
     }
 
     getCurrentUser() {
@@ -135,24 +156,6 @@ class App {
         this.currentUser = user;
 
         alert('Perfil actualizado correctamente');
-    }
-
-    updateProgress(challengeId) {
-        const challenge = this.challenges.find(c => c.id === challengeId);
-        if (!challenge) return;
-
-        const progress = prompt(`Ingresa el nuevo progreso para ${challenge.name} (${challenge.unit}):`);
-        if (progress === null) return;
-
-        const newProgress = parseFloat(progress);
-        if (isNaN(newProgress)) {
-            alert('Por favor ingresa un número válido');
-            return;
-        }
-
-        challenge.progress = newProgress;
-        localStorage.setItem('challenges', JSON.stringify(this.challenges));
-        this.loadDashboard();
     }
 }
 

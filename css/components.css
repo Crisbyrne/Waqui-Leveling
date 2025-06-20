@@ -8,6 +8,13 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Aseguramos que los estilos del logo no sean afectados por otros componentes */
+.welcome-page .logo-container,
+.welcome-page .logo-container .main-logo {
+    box-shadow: none;
+    background: none;
+}
+
 .form-group {
     margin-bottom: var(--spacing-unit);
 }
@@ -37,9 +44,64 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.challenge-card h3 {
-    color: var(--primary-color);
+.challenge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: calc(var(--spacing-unit) * 0.5);
+}
+
+.challenge-header h3 {
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.challenge-status {
+    padding: 4px 8px;
+    border-radius: calc(var(--border-radius) * 0.5);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.status-in-progress {
+    background-color: rgba(33, 150, 243, 0.1);
+    color: #2196F3;
+}
+
+.status-completed {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: var(--success-color);
+}
+
+.challenge-card p {
+    margin-bottom: calc(var(--spacing-unit) * 0.75);
+    color: var(--text-color);
+}
+
+.challenge-details {
+    margin: calc(var(--spacing-unit) * 0.75) 0;
+    padding: calc(var(--spacing-unit) * 0.5);
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: calc(var(--border-radius) * 0.5);
+}
+
+.challenge-details p {
+    margin: calc(var(--spacing-unit) * 0.25) 0;
+    font-size: 0.95rem;
+}
+
+.progress-text {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.goal-text {
+    color: var(--text-color);
+}
+
+.percentage-text {
+    color: var(--success-color);
+    font-weight: 600;
 }
 
 .progress-bar {

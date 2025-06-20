@@ -15,8 +15,22 @@
     <!-- Templates de las páginas -->
     <template id="home-template">
         <div class="welcome-page">
-            <h1>Bienvenido a Waqui Leveling</h1>
-            <p>Tu plataforma para alcanzar tus metas personales</p>
+            <div class="header-section">
+                <div class="logo-container">
+                    <!-- 
+                        Para usar tu propia imagen:
+                        1. Guarda tu imagen en la carpeta 'img/'
+                        2. Reemplaza 'waqui-logo.png' con el nombre de tu archivo
+                        Por ejemplo: si tu imagen se llama 'mi-logo.jpg', cambia a:
+                        src="img/mi-logo.jpg"
+                    -->
+                    <img src="img/logo.jpeg" alt="Waqui Leveling Logo" class="main-logo">
+                </div>
+                <div class="title-container">
+                    <h1>Bienvenido a Waqui Leveling</h1>
+                    <p>Tu plataforma para alcanzar tus metas personales</p>
+                </div>
+            </div>
             <div class="button-group">
                 <button onclick="router.navigate('login')" class="btn primary">Iniciar Sesión</button>
                 <button onclick="router.navigate('register')" class="btn secondary">Registrarse</button>

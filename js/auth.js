@@ -55,6 +55,7 @@ class Auth {
 
     logout() {
         localStorage.removeItem('user');
+        app.currentUser = null; // Clear the current user in the app
         router.navigate('home');
     }
 

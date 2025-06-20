@@ -28,23 +28,65 @@ body {
 }
 
 .welcome-page {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    padding-top: 20px;    /* Reduced to give less space above content */
+}
+
+/* Logo container positioned absolutely in the top-left */
+.welcome-page .logo-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 120px;
+    z-index: 10;
+}
+
+/* Imagen del logo */
+.welcome-page .logo-container .main-logo {
+    width: 100%;
+    height: auto;
+    display: block;
+    animation: logoEntrance 1s ease-out;
+}
+
+/* Header container - centered and separate from logo */
+.welcome-page .header-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 70px 0 40px;  /* Added top padding to create space for the logo */
+}
+
+/* Contenedor del título */
+.welcome-page .title-container {
     text-align: center;
-    padding: calc(var(--spacing-unit) * 2);
 }
 
-.welcome-page h1 {
+/* Título principal */
+.welcome-page .title-container h1 {
     font-size: 2.5rem;
-    margin-bottom: var(--spacing-unit);
     color: var(--primary-color);
+    margin: 0;
+    margin-bottom: 10px;
 }
 
+/* Subtítulo */
+.welcome-page .title-container p {
+    font-size: 1.2rem;
+    margin: 0;
+    color: var(--text-color);
+}
+
+/* Contenido debajo del header */
 .button-group {
     display: flex;
     gap: var(--spacing-unit);
     justify-content: center;
-    margin-top: calc(var(--spacing-unit) * 2);
+    margin-top: 30px;
 }
 
 .btn {
@@ -75,7 +117,27 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
     .welcome-page {
-        padding: var(--spacing-unit);
+        padding: 15px;
+    }
+
+    .welcome-page .logo-container {
+        position: relative;
+        width: 80px;
+        margin: 0 0 15px 0;
+        top: 10px;
+        left: 10px;
+    }
+
+    .welcome-page .header-section {
+        padding-top: 40px;
+    }
+
+    .welcome-page .title-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .welcome-page .title-container p {
+        font-size: 1rem;
     }
 
     .button-group {
@@ -84,5 +146,16 @@ body {
 
     .btn {
         width: 100%;
+    }
+}
+
+@keyframes logoEntrance {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
 } 
