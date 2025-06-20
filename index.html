@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waqui Leveling - Tu Plataforma de Retos Personales</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Las diferentes vistas se cargarán aquí dinámicamente -->
+    </div>
+
+    <!-- Templates de las páginas -->
+    <template id="home-template">
+        <div class="welcome-page">
+            <h1>Bienvenido a Waqui Leveling</h1>
+            <p>Tu plataforma para alcanzar tus metas personales</p>
+            <div class="button-group">
+                <button onclick="router.navigate('login')" class="btn primary">Iniciar Sesión</button>
+                <button onclick="router.navigate('register')" class="btn secondary">Registrarse</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="login-template">
+        <div class="form-container">
+            <h2>Iniciar Sesión</h2>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn primary">Iniciar Sesión</button>
+            </form>
+            <p>¿No tienes una cuenta? <a href="#" onclick="router.navigate('register')">Regístrate</a></p>
+        </div>
+    </template>
+
+    <template id="register-template">
+        <div class="form-container">
+            <h2>Registro</h2>
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="register-name">Nombre</label>
+                    <input type="text" id="register-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Contraseña</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <button type="submit" class="btn primary">Registrarse</button>
+            </form>
+            <p>¿Ya tienes una cuenta? <a href="#" onclick="router.navigate('login')">Inicia Sesión</a></p>
+        </div>
+    </template>
+
+    <template id="dashboard-template">
+        <nav class="nav-bar">
+            <ul class="nav-list">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+        </nav>
+        <div class="challenges-container">
+            <!-- Los retos se cargarán aquí dinámicamente -->
+        </div>
+    </template>
+
+    <template id="new-challenge-template">
+        <nav class="nav-bar">
+            <ul class="nav-list">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+        </nav>
+        <div class="form-container">
+            <h2>Nuevo Reto</h2>
+            <form onsubmit="handleNewChallenge(event)">
+                <div class="form-group">
+                    <label for="challenge-name">Nombre del Reto</label>
+                    <input type="text" id="challenge-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="challenge-description">Descripción</label>
+                    <textarea id="challenge-description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="challenge-type">Tipo</label>
+                    <select id="challenge-type" required>
+                        <option value="personal">Personal</option>
+                        <option value="colaborativo">Colaborativo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="challenge-unit">Unidad de Medida</label>
+                    <input type="text" id="challenge-unit" required placeholder="ej: km, horas, páginas">
+                </div>
+                <div class="form-group">
+                    <label for="challenge-goal">Meta</label>
+                    <input type="number" id="challenge-goal" required min="1">
+                </div>
+                <div class="form-group">
+                    <label for="challenge-deadline">Fecha Límite</label>
+                    <input type="date" id="challenge-deadline" required>
+                </div>
+                <button type="submit" class="btn primary">Crear Reto</button>
+            </form>
+        </div>
+    </template>
+
+    <template id="calendar-template">
+        <nav class="nav-bar">
+            <ul class="nav-list">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+        </nav>
+        <div class="calendar-container">
+            <!-- El calendario se cargará aquí dinámicamente -->
+        </div>
+    </template>
+
+    <template id="profile-template">
+        <nav class="nav-bar">
+            <ul class="nav-list">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+        </nav>
+        <div class="profile-container">
+            <!-- El perfil se cargará aquí dinámicamente -->
+        </div>
+    </template>
+
+    <!-- Scripts -->
+    <script src="js/router.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/challenges.js"></script>
+</body>
+</html> 
