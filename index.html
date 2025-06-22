@@ -2,10 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Waqui Leveling - Tu Plataforma de Retos Personales</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/ios-fixes.css">
+    <!-- iOS Safari fixes first -->
+    <script src="js/ios-fixes.js"></script>
+    <!-- Polyfill for ES6 features support in older browsers -->
+    <script>
+        // Fix for Safari/iOS event handling
+        document.addEventListener('touchstart', function() {}, {passive: true});
+    </script>
 </head>
 <body>
     <div id="app">

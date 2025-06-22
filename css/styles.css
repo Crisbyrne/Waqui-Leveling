@@ -1,3 +1,8 @@
+/* Safari-specific resets at the top */
+html {
+    -webkit-text-size-adjust: 100%; /* Prevent font scaling in landscape */
+}
+
 :root {
     --primary-color: #4CAF50;
     --secondary-color: #2196F3;
@@ -13,18 +18,29 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling on mobile */
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
     background-color: var(--background-color);
+    -webkit-font-smoothing: antialiased; /* Better text rendering on iOS */
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #app {
     min-height: 100vh;
     padding: var(--spacing-unit);
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 .welcome-page {
@@ -142,10 +158,62 @@ body {
 
     .button-group {
         flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .btn {
         width: 100%;
+        /* Better touch target size for mobile */
+        min-height: 44px;
+        /* iOS-specific button appearance fix */
+        -webkit-appearance: none;
+        appearance: none;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    body {
+        /* Fix for iOS Safari body height issues */
+        min-height: -webkit-fill-available;
+    }
+
+    #app {
+        min-height: -webkit-fill-available;
+    }
+    
+    .btn {
+        /* Fix for iOS Safari button rendering */
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+        /* Fix for potential transparent button issue on iOS */
+        background-color: var(--primary-color); 
+    }
+    
+    .btn.secondary {
+        background-color: var(--secondary-color);
+    }
+    
+    input, textarea, select {
+        /* iOS input styling fix */
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: var(--border-radius);
+    }
+
+    /* Fix for Safari mobile initial scale issues */
+    @media screen and (max-width: 320px) {
+        body {
+            font-size: 14px;
+        }
+        
+        .welcome-page .title-container h1 {
+            font-size: 1.5rem;
+        }
     }
 }
 

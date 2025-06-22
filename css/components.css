@@ -33,6 +33,17 @@
     border: 1px solid #ddd;
     border-radius: calc(var(--border-radius) * 0.5);
     font-size: 1rem;
+    -webkit-appearance: none; /* iOS Safari input fix */
+    appearance: none;
+}
+
+/* Fix for Safari select elements */
+.form-group select {
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position-x: 98%;
+    background-position-y: 50%;
+    padding-right: 30px;
 }
 
 /* Challenge Card Styles */
@@ -192,13 +203,27 @@
 @media (max-width: 768px) {
     .nav-list {
         flex-direction: column;
+        gap: 8px;
+    }
+    
+    .nav-item {
+        min-height: 44px; /* Better touch targets for iOS */
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .form-container {
         margin: var(--spacing-unit);
+        max-width: none;
     }
     
     .calendar-grid {
         font-size: 0.8rem;
+    }
+    
+    /* Fix for iOS touch elements */
+    input, select, textarea, button, .nav-item, .btn {
+        font-size: 16px !important; /* Prevent iOS zoom on input focus */
     }
 } 

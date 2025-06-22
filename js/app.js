@@ -2,6 +2,61 @@ class App {
     constructor() {
         this.challenges = JSON.parse(localStorage.getItem('challenges') || '[]');
         this.currentUser = null;
+        
+        // Enhanced iOS detection
+        this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        // Fix for iOS Safari touch events
+        if ('ontouchstart' in window) {
+            document.addEventListener('touchstart', function(){}, {passive: true});
+        }
+        
+        // Apply iOS specific fixes
+        if (this.isIOS) {
+            this.applyIOSFixes();
+        }
+    }
+
+    applyIOSFixes() {
+        // Add iOS class to body for CSS targeting
+        document.body.classList.add('ios-device');
+        
+        // Fix for potential viewport issues
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (viewportMeta) {
+            // Ensure proper viewport settings for iOS
+            viewportMeta.setAttribute('content', 
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        }
+        
+        // Fix for iOS click delay
+        const attachFastClick = () => {
+            const links = document.querySelectorAll('a, button, .nav-item, [onclick]');
+            links.forEach(el => {
+                el.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const clickEvent = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    e.target.dispatchEvent(clickEvent);
+                });
+            });
+        };
+        
+        // Apply FastClick after page changes
+        document.addEventListener('DOMContentLoaded', attachFastClick);
+        
+        // Reattach after navigation
+        const originalNavigate = router.navigate;
+        if (originalNavigate) {
+            router.navigate = function(route, isPopState) {
+                originalNavigate.call(router, route, isPopState);
+                setTimeout(attachFastClick, 300);
+            };
+        }
     }
 
     loadDashboard() {
