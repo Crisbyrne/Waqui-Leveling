@@ -59,7 +59,10 @@ class App {
         }
     }
 
+    
     loadDashboard() {
+        let cumplimientoChart = null;  // Variable global para almacenar el gráfico
+
         const challenges = challengeManager.getUserChallenges();
         const container = document.querySelector('.challenges-container');
         if (!container) return;
@@ -76,6 +79,24 @@ class App {
         }
 
         container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
+        
+        app.loadDashboard = function () {
+            const challenges = challengeManager.getUserChallenges();
+            const container = document.querySelector('.challenges-container');
+            if (!container) return;
+        
+            if (challenges.length === 0) {
+                container.innerHTML = `...`;
+                return;
+            }
+        
+            container.innerHTML = challenges.map(renderChallenge).join('');
+        
+            
+        };
+        
+    
+    
     }
 
     loadCalendar() {
@@ -140,26 +161,42 @@ class App {
         const currentProgress = challenge.progress || 0;
         const status = progress >= 100 ? 'Completado' : 'En progreso';
         const statusClass = progress >= 100 ? 'status-completed' : 'status-in-progress';
-        
-        return `
+    
+        const icon = challenge.icon || '📘'; // Puedes usar emoji o una imagen en base64
+    
+        const cardHTML = `
             <div class="challenge-card">
-                <div class="challenge-header">
-                    <h3>${challenge.name}</h3>
-                    <span class="challenge-status ${statusClass}">${status}</span>
+                <div class="challenge-icon-header">
+                    <div class="progress-circle">
+                        <canvas id="progress-${challenge.id}" width="80" height="80"></canvas>
+                        <div class="progress-label">${progress}%</div>
+                    </div>
+                    <div class="challenge-title">
+                        <div class="icon">${icon}</div>
+                        <h3>${challenge.name}</h3>
+                        <span class="challenge-status ${statusClass}">${status}</span>
+                    </div>
                 </div>
-                <p>${challenge.description}</p>
-                <div class="progress-bar">
-                    <div class="progress-bar-fill" style="width: ${progress}%"></div>
-                </div>
+                <p>${challenge.description || ''}</p>
                 <div class="challenge-details">
-                    <p class="progress-text">Progreso actual: ${currentProgress} ${challenge.unit}</p>
-                    <p class="goal-text">Meta: ${challenge.goal} ${challenge.unit}</p>
-                    <p class="percentage-text">Completado: ${progress}%</p>
+                    <p>Progreso actual: ${currentProgress} ${challenge.unit}</p>
+                    <p>Meta: ${challenge.goal || challenge.goalPerInterval} ${challenge.unit}</p>
                 </div>
                 <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
             </div>
         `;
+    
+        setTimeout(() => drawCircularProgress(`progress-${challenge.id}`, progress), 0);
+    
+        return cardHTML;
     }
+    
+    
+    
+
+
+    
+    
 
     createCalendarDays(days) {
         return days.map(day => {
@@ -179,9 +216,11 @@ class App {
     }
 
     calculateProgress(challenge) {
-        const current = challenge.progress || 0;
-        return Math.min(Math.round((current / challenge.goal) * 100), 100);
+        const current = parseFloat(challenge.progress) || 0;
+        const goal = parseFloat(challenge.goalPerInterval) || 0;
+        return goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0;
     }
+    
 
     hasProgressOnDay(date) {
         // Implementar lógica para verificar si hay progreso en una fecha específica
@@ -216,3 +255,27 @@ class App {
 
 // Initialize app
 const app = new App(); 
+
+function drawCircularProgress(canvasId, percent) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const radius = canvas.width / 2;
+    const lineWidth = 8;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Fondo gris
+    ctx.beginPath();
+    ctx.arc(radius, radius, radius - lineWidth / 2, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+
+    // Progreso verde
+    ctx.beginPath();
+    ctx.arc(radius, radius, radius - lineWidth / 2, -Math.PI / 2, (2 * Math.PI) * (percent / 100) - Math.PI / 2);
+    ctx.strokeStyle = '#4caf50';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+}

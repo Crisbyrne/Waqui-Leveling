@@ -19,6 +19,7 @@
         // Fix for Safari/iOS event handling
         document.addEventListener('touchstart', function() {}, {passive: true});
     </script>
+
 </head>
 <body>
     <div id="app">
@@ -51,6 +52,8 @@
         </div>
     </template>
 
+
+<!-- Inicio sesión -->   
     <template id="login-template">
         <div class="form-container">
             <h2>Iniciar Sesión</h2>
@@ -68,6 +71,7 @@
             <p>¿No tienes una cuenta? <a href="#" onclick="router.navigate('register')">Regístrate</a></p>
         </div>
     </template>
+<!-- Registro -->   
 
     <template id="register-template">
         <div class="form-container">
@@ -91,6 +95,9 @@
         </div>
     </template>
 
+
+<!-- Pagina de inicio -->   
+
     <template id="dashboard-template">
         <nav class="nav-bar">
             <ul class="nav-list">
@@ -104,52 +111,89 @@
         <div class="challenges-container">
             <!-- Los retos se cargarán aquí dinámicamente -->
         </div>
+
     </template>
+
+<!-- Crear reto -->   
 
     <template id="new-challenge-template">
         <nav class="nav-bar">
-            <ul class="nav-list">
-                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-            </ul>
+          <ul class="nav-list">
+            <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+            <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+            <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+            <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+            <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+          </ul>
         </nav>
+      
         <div class="form-container">
-            <h2>Nuevo Reto</h2>
-            <form onsubmit="handleNewChallenge(event)">
-                <div class="form-group">
-                    <label for="challenge-name">Nombre del Reto</label>
-                    <input type="text" id="challenge-name" required>
+          <h2>Nuevo Reto</h2>
+          <form onsubmit="handleNewChallenge(event)">
+            <!-- Nombre -->
+            <div class="form-group">
+                <label for="challenge-name">Nombre del reto</label>
+              <input type="text" id="challenge-name" required>
+            </div>
+      
+            <!-- Descripción -->
+            <div class="form-group styled-goal-input">
+                <label for="challenge-description">Descripción</label>
+              <textarea id="challenge-description" ></textarea>
+            </div>
+            <!-- Categoría -->
+            <div class="form-group">
+                <label for="challenge-category">Categoría</label>
+                <select id="challenge-category" onchange="toggleCustomCategoryInput()">
+                <option value="lectura">📚 Lectura</option>
+                <option value="deporte">🏃‍♂️ Deporte</option>
+                <option value="custom">➕ Personalizada</option>
+                </select>
+                <input type="text" id="custom-category" placeholder="Nueva categoría" style="display: none;">
+            </div>
+      
+            <!-- Tipo -->
+            <div class="form-group">
+                <label for="challenge-type">Tipo</label>
+              <select id="challenge-type" required>
+                <option value="personal">Personal</option>
+                <option value="colaborativo">Colaborativo</option>
+              </select>
+            </div>
+      
+            <!--  meta / cantidad / frecuencia -->
+            <div class="form-group styled-goal-input">
+                <label class="meta-label">Meta:</label>
+                <div class="meta-inputs-inline">
+                  <input type="number" id="challenge-goal-interval" placeholder="Meta" required>
+                  <input type="text" id="challenge-unit" placeholder="cantidad" required>
+                  <span class="slash">/</span>
+                  <select id="challenge-interval" required>
+                    <option value="daily">diario</option>
+                    <option value="weekly">semanal</option>
+                    <option value="monthly">mensual</option>
+                  </select>
                 </div>
-                <div class="form-group">
-                    <label for="challenge-description">Descripción</label>
-                    <textarea id="challenge-description" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="challenge-type">Tipo</label>
-                    <select id="challenge-type" required>
-                        <option value="personal">Personal</option>
-                        <option value="colaborativo">Colaborativo</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="challenge-unit">Unidad de Medida</label>
-                    <input type="text" id="challenge-unit" required placeholder="ej: km, horas, páginas">
-                </div>
-                <div class="form-group">
-                    <label for="challenge-goal">Meta</label>
-                    <input type="number" id="challenge-goal" required min="1">
-                </div>
-                <div class="form-group">
-                    <label for="challenge-deadline">Fecha Límite</label>
-                    <input type="date" id="challenge-deadline" required>
-                </div>
-                <button type="submit" class="btn primary">Crear Reto</button>
-            </form>
+              </div>
+              
+              
+      
+      
+            <!-- Fecha límite opcional (puedes quitarlo si no lo usas) -->
+            <div class="form-group styled-goal-input">
+                <label for="challenge-deadline">Fecha límite</label>
+              <input type="date" id="challenge-deadline">
+            </div>
+      
+            <button type="submit" class="btn primary">Crear Reto</button>
+          </form>
         </div>
-    </template>
+      </template>
+      
+
+
+
+<!-- Calendario -->   
 
     <template id="calendar-template">
         <nav class="nav-bar">
@@ -165,6 +209,8 @@
             <!-- El calendario se cargará aquí dinámicamente -->
         </div>
     </template>
+
+<!-- Perfil -->   
 
     <template id="profile-template">
         <nav class="nav-bar">

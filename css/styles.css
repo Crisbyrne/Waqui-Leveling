@@ -174,6 +174,18 @@ body {
     }
 }
 
+.styled-goal-input {
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-top: 10px;
+    width: 100%; 
+    box-sizing: border-box;
+  }
+
+
+  
+  
+
 /* iOS Safari specific fixes */
 @supports (-webkit-touch-callout: none) {
     body {
@@ -227,3 +239,205 @@ body {
         transform: translateX(0);
     }
 } 
+
+
+  
+  .meta-inputs-inline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  
+  .meta-label {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-right: 8px;
+    color: #000000;         
+
+  }
+  
+  .styled-goal-input input[type="number"],
+  .styled-goal-input input[type="text"],
+  .styled-goal-input select {
+    border: 2px solid;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background-color: transparent;
+    font-size: 0.95rem;
+    color: white;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  
+  /* Meta input: amarillo */
+  #challenge-goal-interval {
+    border-color: #ffc43d;
+    color: #ffc43d;
+  }
+  #challenge-goal-interval::placeholder {
+    color: #ffc43d;
+  }
+  
+  /* Unidad input: cian */
+  #challenge-unit {
+    border-color: #00e0ff;
+    color: #00e0ff;
+  }
+  #challenge-unit::placeholder {
+    color: #00e0ff;
+  }
+  
+  /* Frecuencia select: cian */
+  #challenge-interval {
+    border-color: #00e0ff;
+    color: #00e0ff;
+    background-color: transparent;
+  }
+  
+  /* Separador / */
+  .slash {
+    font-size: 1.4rem;
+    color: #cccccc;
+    font-weight: bold;
+  }
+  .styled-goal-input {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+  
+  
+  .styled-goal-input {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-top: 10px;
+  }
+  
+  
+  /* 🔧 CORRECCIÓN: ahora usamos flex para alinear todo horizontalmente */
+  .meta-inputs-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  
+  .meta-inputs-inline input[type="number"],
+  .meta-inputs-inline input[type="text"],
+  .meta-inputs-inline select {
+    border: 2px solid;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background-color: transparent;
+    font-size: 0.95rem;
+    color: white;
+    outline: none;
+    transition: border-color 0.3s;
+    min-width: 120px;
+    max-width: 160px;
+    width: 100%;
+  }
+  
+  #challenge-goal-interval {
+    border-color: #0a616c;
+    color: #0a616c;
+  }
+  #challenge-goal-interval::placeholder {
+    color: #0a616c;
+  }
+  
+  #challenge-unit {
+    border-color: #0a616c;
+    color: #0a616c;
+  }
+  #challenge-unit::placeholder {
+    color: #0a616c;
+  }
+  
+  #challenge-interval {
+    border-color: #0a616c;
+    color: #0a616c;
+  }
+  
+  .slash {
+    font-size: 1.4rem;
+    color: #cccccc;
+    font-weight: bold;
+  }
+  .challenge-icon {
+    margin-right: 8px;
+    font-size: 1.4em;
+    vertical-align: middle;
+}
+.challenges-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .challenges-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: flex-start;
+  }
+  
+  .challenge-card {
+    width: 260px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .challenge-icon-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .challenge-title {
+    flex: 1;
+  }
+  
+  .challenge-title h3 {
+    margin: 0;
+    font-size: 1.1em;
+  }
+  
+  .icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  
+  .progress-circle {
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+  
+  .progress-circle canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  
+  .progress-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  
