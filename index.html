@@ -152,13 +152,19 @@
                 <input type="text" id="custom-category" placeholder="Nueva categoría" style="display: none;">
             </div>
       
-            <!-- Tipo -->
+            <!-- Tipo de reto -->
             <div class="form-group">
-                <label for="challenge-type">Tipo</label>
-              <select id="challenge-type" required>
+            <label for="challenge-type">Tipo de reto</label>
+            <select id="challenge-type" required>
                 <option value="personal">Personal</option>
                 <option value="colaborativo">Colaborativo</option>
-              </select>
+            </select>
+            </div>
+
+            <!-- Campo de correos, inicialmente oculto -->
+            <div class="form-group" id="participants-group" style="display: none;">
+            <label for="challenge-participants">Correos de amigos (separados por coma)</label>
+            <input type="text" id="challenge-participants" placeholder="ej: amigo1@mail.com, amigo2@mail.com">
             </div>
       
             <!--  meta / cantidad / frecuencia -->

@@ -12,15 +12,19 @@ class ChallengeManager {
     }
 
     createChallenge(data) {
-        const user = app.getCurrentUser();
-        if (!user) {
-            throw new Error('Usuario no autenticado');
-        }
+    const user = app.getCurrentUser();
+    if (!user) throw new Error('Usuario no autenticado');
 
-        /* ---------- dentro de ChallengeManager.createChallenge ---------- */
+    const sharedId = this.generateUID(); // ID común entre todos los participantes
+
+    const allParticipants = data.participants || [user.id];
+    const icon = data.icon;
+
+    allParticipants.forEach(participantId => {
         const challenge = {
-            id: this.generateUID(),
-            userId: user.id,
+            id: this.generateUID(), // único por participante
+            sharedId: sharedId,
+            userId: participantId,
             name: data.name,
             description: data.description,
             type: data.type,
@@ -29,56 +33,78 @@ class ChallengeManager {
             interval: data.interval,
             deadline: data.deadline,
             category: data.category,
-            icon: data.icon,
+            icon: icon,
+            participants: allParticipants,
             progress: 0,
+            streak: 0,
             createdAt: new Date().toISOString(),
+            lastResetDate: new Date().toDateString(),
             history: []
-          };
-          
-  
+        };
 
         this.challenges.push(challenge);
+    });
+
+    this.saveChanges();
+}
+
+
+    
+    updateProgress(challengeId) {
+    const challenge = this.getChallenge(challengeId);
+    if (!challenge) {
+        alert('Reto no encontrado o no tienes permiso para modificarlo');
+        return;
+    }
+
+    const input = prompt(`Ingresa cuánto has avanzado en "${challenge.name}" (${challenge.unit}):`);
+    if (input === null) return;
+
+    const addedProgress = parseFloat(input);
+    if (isNaN(addedProgress)) {
+        alert('Por favor ingresa un número válido');
+        return;
+    }
+
+    try {
+        const todayStr = new Date().toDateString();
+
+        // Buscar si ya hay entrada para hoy en el historial
+        let todayEntry = challenge.history.find(h => new Date(h.date).toDateString() === todayStr);
+
+        if (todayEntry) {
+            todayEntry.progress += addedProgress;
+        } else {
+            todayEntry = {
+                date: new Date().toISOString(),
+                progress: addedProgress
+            };
+            challenge.history.push(todayEntry);
+        }
+
+        // Actualizar progreso total
+        if (challenge.interval === 'daily') {
+            challenge.progress = todayEntry.progress;
+        } else {
+            challenge.progress += addedProgress;
+        }
+
+        challenge.lastResetDate = todayStr;
+
         this.saveChanges();
 
-        return challenge;
-    }
+        const card = document.querySelector(`[data-id="${challengeId}"]`);
+        if (card) {
+            card.outerHTML = app.createChallengeCard(challenge);
+        }
 
-    updateProgress(challengeId) {
-        const challenge = this.getChallenge(challengeId);
-        if (!challenge) {
-            alert('Reto no encontrado o no tienes permiso para modificarlo');
-            return;
-        }
-    
-        const input = prompt(`Ingresa cuánto has avanzado en "${challenge.name}" (${challenge.unit}):`);
-        if (input === null) return;
-    
-        const addedProgress = parseFloat(input);
-        if (isNaN(addedProgress)) {
-            alert('Por favor ingresa un número válido');
-            return;
-        }
-    
-        try {
-            // Actualiza el progreso y la historia
-            challenge.progress += addedProgress;
-            challenge.history.push({
-                date: new Date().toISOString(),
-                progress: challenge.progress
-            });
-    
-            this.saveChanges();
-    
-            // ✅ En vez de recargar todo el dashboard, solo actualizamos la tarjeta
-            const card = document.querySelector(`[data-id="${challengeId}"]`);
-            if (card) {
-                card.outerHTML = renderChallenge(challenge);
-            }
-    
-        } catch (error) {
-            alert('Error al actualizar el progreso: ' + error.message);
-        }
+    } catch (error) {
+        alert('Error al actualizar el progreso: ' + error.message);
     }
+}
+
+
+
     
     
 
@@ -138,6 +164,29 @@ class ChallengeManager {
     saveChanges() {
         localStorage.setItem('challenges', JSON.stringify(this.challenges));
     }
+
+resetDailyChallenges() {
+    const today = new Date().toDateString();
+
+    this.challenges.forEach(challenge => {
+        if (challenge.interval === 'daily' && challenge.lastResetDate !== today) {
+            if (challenge.progress >= challenge.goalPerInterval) {
+                challenge.streak = (challenge.streak || 0) + 1;
+            } else {
+                challenge.streak = 0;
+            }
+
+            challenge.progress = 0;
+            challenge.lastResetDate = today;
+        }
+    });
+
+    this.saveChanges();
+}
+
+
+
+
 }
 
 // Inicializar el gestor de retos
@@ -147,37 +196,79 @@ const challengeManager = new ChallengeManager();
 /* ---------- handleNewChallenge ---------- */
 function handleNewChallenge(event) {
     event.preventDefault();
-  
+
+    const isEditing = !!localStorage.getItem('editingChallenge');
+
     const categorySelect = document.getElementById('challenge-category').value;
     const customCategory = document.getElementById('custom-category').value.trim();
     const category = categorySelect === 'custom' ? customCategory : categorySelect;
-    
+
     const icons = {
-      lectura: '📚',
-      deporte: '🏃‍♂️',
-      custom: '🌀'
+        lectura: '📚',
+        deporte: '🏃‍♂️',
+        custom: '🌀'
     };
-    
-    const data = {
-      name: document.getElementById('challenge-name').value.trim(),
-      description: document.getElementById('challenge-description').value.trim(),
-      type: document.getElementById('challenge-type').value,
-      unit: document.getElementById('challenge-unit').value.trim(),
-      goalPerInterval: document.getElementById('challenge-goal-interval').value,
-      interval: document.getElementById('challenge-interval').value,
-      deadline: document.getElementById('challenge-deadline').value || null,
-      category: category,
-      icon: icons[categorySelect] || '🌀'
-    };
-    
-  
-    try {
-      challengeManager.createChallenge(data);
-      router.navigate('dashboard');
-    } catch (err) {
-      alert(err.message);
+
+    // ✅ AQUÍ es donde debes agregar esto:
+    let participants = [app.getCurrentUser().id];
+
+    if (document.getElementById('challenge-type').value === 'colaborativo') {
+        const emailsRaw = document.getElementById('challenge-participants');
+        if (emailsRaw) {
+            const participantEmails = emailsRaw.value
+                .split(',')
+                .map(e => e.trim())
+                .filter(e => e !== '');
+
+            const allUsers = auth.users;
+
+            participantEmails.forEach(email => {
+                const user = allUsers.find(u => u.email === email);
+                if (user && !participants.includes(user.id)) {
+                    participants.push(user.id);
+                }
+            });
+        }
     }
-  }
+
+
+    const data = {
+        name: document.getElementById('challenge-name').value.trim(),
+        description: document.getElementById('challenge-description').value.trim(),
+        type: document.getElementById('challenge-type').value,
+        unit: document.getElementById('challenge-unit').value.trim(),
+        goalPerInterval: document.getElementById('challenge-goal-interval').value,
+        interval: document.getElementById('challenge-interval').value,
+        deadline: document.getElementById('challenge-deadline').value || null,
+        category: category,
+        icon: icons[categorySelect] || '🌀',
+        participants: participants // ✅ importante
+    };
+
+    if (isEditing) {
+        const challenge = JSON.parse(localStorage.getItem('editingChallenge'));
+        const index = challengeManager.challenges.findIndex(c => c.id === challenge.id);
+        if (index !== -1) {
+            challengeManager.challenges[index] = {
+                ...challengeManager.challenges[index],
+                ...data
+            };
+            challengeManager.saveChanges();
+            localStorage.removeItem('editingChallenge');
+            router.navigate('dashboard');
+            return;
+        }
+    }
+
+    try {
+        challengeManager.createChallenge(data); // ✅ usa el objeto con participantes
+        router.navigate('dashboard');
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+
   
 
 // Manejar actualización de progreso
@@ -207,14 +298,17 @@ function handleProgressUpdate(challengeId) {
 function renderChallenge(challenge) {
     const expected = challengeManager.getExpectedProgress(challenge);
     const goal = challenge.goalPerInterval || 0;
-    const actual = challenge.progress || 0;
+    const currentUser = app.getCurrentUser();
+    const actual = (challenge.progress?.[currentUser.id] !== undefined)
+        ? challenge.progress[currentUser.id]
+        : (challenge.progress || 0);
 
-    // Asegurar que goal > 0 antes de calcular porcentaje
     const percent = (goal > 0)
         ? Math.min(100, Math.round((actual / goal) * 100))
         : 0;
 
-    const challengeHTML = `
+    // Render principal del reto
+    let challengeHTML = `
         <div class="challenge-card">
             <h3>${challenge.name}</h3>
             <p>${challenge.description}</p>
@@ -225,11 +319,66 @@ function renderChallenge(challenge) {
             <p>Meta: ${goal} ${challenge.unit}</p>
             <p>Completado: ${percent}%</p>
             <button onclick="handleProgressUpdate('${challenge.id}')">Actualizar Progreso</button>
-        </div>
     `;
+
+    // Agregar progreso de compañeros si es colaborativo
+    if (challenge.type === 'colaborativo' && challenge.participants?.length > 1) {
+        challengeHTML += `<div><strong>Avance de compañeros:</strong></div>`;
+        
+        challenge.participants.forEach(pid => {
+            if (pid !== currentUser.id) {
+                const user = auth.users.find(u => u.id === pid);
+                const userName = user?.name || user?.email || 'Usuario';
+                const userProgress = challenge.progress?.[pid] || 0;
+                const userPercent = (goal > 0)
+                    ? Math.min(100, Math.round((userProgress / goal) * 100))
+                    : 0;
+
+                challengeHTML += `
+                    <div style="margin-top: 4px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${userName}</span>
+                            <span>${userPercent}%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${userPercent}%; background-color: #6a1b9a;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    challengeHTML += `</div>`; // Cerrar .challenge-card
     return challengeHTML;
 }
 
+
+
+
+    // Editar y eliminar retos
+
+function deleteChallenge(challengeId) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este reto? Esta acción no se puede deshacer.")) return;
+
+    try {
+        challengeManager.deleteChallenge(challengeId);
+        app.loadDashboard();  // Recargar después de eliminar
+    } catch (error) {
+        alert('Error al eliminar el reto: ' + error.message);
+    }
+}
+
+function editChallenge(challengeId) {
+    const challenge = challengeManager.getChallenge(challengeId);
+    if (!challenge) return alert("Reto no encontrado");
+
+    // 🟢 Guardar en localStorage para precargar el formulario
+    localStorage.setItem('editingChallenge', JSON.stringify(challenge));
+
+    // 🟢 Navegar al formulario de edición (el mismo que crear reto)
+    router.navigate('new-challenge');
+}
 
 
 

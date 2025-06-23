@@ -93,6 +93,58 @@ class Router {
                 case 'profile':
                     app.loadProfile();
                     break;
+                case 'new-challenge':
+                    const editing = JSON.parse(localStorage.getItem('editingChallenge') || 'null');
+                    if (editing) {
+                        setTimeout(() => {
+                            document.getElementById('challenge-name').value = editing.name;
+                            document.getElementById('challenge-description').value = editing.description;
+                            document.getElementById('challenge-type').value = editing.type;
+                            document.getElementById('challenge-unit').value = editing.unit;
+                            document.getElementById('challenge-goal-interval').value = editing.goalPerInterval;
+                            document.getElementById('challenge-interval').value = editing.interval;
+                            if (editing.deadline) {
+                                document.getElementById('challenge-deadline').value = editing.deadline;
+                            }
+
+                            const predefined = ['lectura', 'deporte'];
+                            if (predefined.includes(editing.category)) {
+                                document.getElementById('challenge-category').value = editing.category;
+                            } else {
+                                document.getElementById('challenge-category').value = 'custom';
+                                document.getElementById('custom-category').value = editing.category;
+                                document.getElementById('custom-category').style.display = 'block';
+                            }
+
+                            // Prellenar participantes si es colaborativo
+                            if (editing.type === 'colaborativo') {
+                                const currentUserId = app.getCurrentUser()?.id;
+                                const others = editing.participants?.filter(pid => pid !== currentUserId) || [];
+                                const emails = others.map(id => {
+                                    const user = auth.users.find(u => u.id === id);
+                                    return user?.email || '';
+                                }).join(', ');
+                                const field = document.getElementById('challenge-participants');
+                                if (field) field.value = emails;
+                            }
+                        }, 50);
+                    }
+
+                    // Mostrar u ocultar el campo de participantes dinámicamente
+                    setTimeout(() => {
+                        const participantsGroup = document.getElementById('participants-group');
+                        const typeSelector = document.getElementById('challenge-type');
+
+                        function toggleParticipants() {
+                            const value = typeSelector.value;
+                            participantsGroup.style.display = (value === 'colaborativo') ? 'block' : 'none';
+                        }
+
+                        typeSelector.addEventListener('change', toggleParticipants);
+                        toggleParticipants(); // Ejecutar una vez al inicio
+                    }, 100);
+                    break;
+
             }
         } catch (err) {
             console.error('Error initializing page:', err);

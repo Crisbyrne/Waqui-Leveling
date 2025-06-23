@@ -59,46 +59,29 @@ class App {
         }
     }
 
-    
-    loadDashboard() {
-        let cumplimientoChart = null;  // Variable global para almacenar el gráfico
+   loadDashboard() {
+    // 🆕 Reinicia los retos diarios si ha cambiado el día
+    challengeManager.resetDailyChallenges();  
 
-        const challenges = challengeManager.getUserChallenges();
-        const container = document.querySelector('.challenges-container');
-        if (!container) return;
+    const challenges = challengeManager.getUserChallenges();
+    const container = document.querySelector('.challenges-container');
+    if (!container) return;
 
-        if (challenges.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No tienes retos activos</h3>
-                    <p>¡Comienza creando tu primer reto!</p>
-                    <button onclick="router.navigate('new-challenge')" class="btn primary">Crear Reto</button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
-        
-        app.loadDashboard = function () {
-            const challenges = challengeManager.getUserChallenges();
-            const container = document.querySelector('.challenges-container');
-            if (!container) return;
-        
-            if (challenges.length === 0) {
-                container.innerHTML = `...`;
-                return;
-            }
-        
-            container.innerHTML = challenges.map(renderChallenge).join('');
-        
-            
-        };
-        
-    
-    
+    if (challenges.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No tienes retos activos</h3>
+                <p>¡Comienza creando tu primer reto!</p>
+                <button onclick="router.navigate('new-challenge')" class="btn primary">Crear Reto</button>
+            </div>
+        `;
+        return;
     }
 
+    container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
+}
+ 
+   
     loadCalendar() {
         const container = document.querySelector('.calendar-container');
         if (!container) return;
@@ -156,40 +139,73 @@ class App {
         `;
     }
 
-    createChallengeCard(challenge) {
-        const progress = this.calculateProgress(challenge);
-        const currentProgress = challenge.progress || 0;
-        const status = progress >= 100 ? 'Completado' : 'En progreso';
-        const statusClass = progress >= 100 ? 'status-completed' : 'status-in-progress';
-    
-        const icon = challenge.icon || '📘'; // Puedes usar emoji o una imagen en base64
-    
-        const cardHTML = `
-            <div class="challenge-card">
-                <div class="challenge-icon-header">
-                    <div class="progress-circle">
-                        <canvas id="progress-${challenge.id}" width="80" height="80"></canvas>
-                        <div class="progress-label">${progress}%</div>
-                    </div>
-                    <div class="challenge-title">
-                        <div class="icon">${icon}</div>
-                        <h3>${challenge.name}</h3>
-                        <span class="challenge-status ${statusClass}">${status}</span>
-                    </div>
-                </div>
-                <p>${challenge.description || ''}</p>
-                <div class="challenge-details">
-                    <p>Progreso actual: ${currentProgress} ${challenge.unit}</p>
-                    <p>Meta: ${challenge.goal || challenge.goalPerInterval} ${challenge.unit}</p>
-                </div>
-                <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
-            </div>
-        `;
-    
-        setTimeout(() => drawCircularProgress(`progress-${challenge.id}`, progress), 0);
-    
-        return cardHTML;
+createChallengeCard(challenge) {
+    const progress = this.calculateProgress(challenge);
+
+    // Progreso del día si es diario
+    let currentProgress = challenge.progress || 0;
+    if (challenge.interval === 'daily') {
+        const today = new Date().toDateString();
+        const todayEntry = challenge.history?.find(h => new Date(h.date).toDateString() === today);
+        currentProgress = todayEntry ? todayEntry.progress : 0;
     }
+
+    const status = progress >= 100 ? 'Completado' : 'En progreso';
+    const statusClass = progress >= 100 ? 'status-completed' : 'status-in-progress';
+    const icon = challenge.icon || '📘';
+
+    const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.participants?.length > 1) ? `
+        <div class="participant-progress">
+            <h4>Avance de compañeros:</h4>
+            <ul>
+                ${challenge.participants
+                    .filter(pid => pid !== app.getCurrentUser().id)
+                    .map(pid => {
+                        const other = challengeManager.challenges.find(c => c.userId === pid && c.sharedId === challenge.sharedId);
+                        const user = auth.users.find(u => u.id === pid);
+                        const name = user?.name || 'Invitado';
+                        const p = other?.progress || 0;
+                        return `<li>${name}: ${p} ${challenge.unit}</li>`;
+                    }).join('')}
+            </ul>
+        </div>
+    ` : '';
+
+    const cardHTML = `
+        <div class="challenge-card" data-id="${challenge.id}">
+            <div class="challenge-icon-header">
+                <div class="progress-circle">
+                    <canvas id="progress-${challenge.id}" width="80" height="80"></canvas>
+                    <div class="progress-label">${progress}%</div>
+                </div>
+                <div class="challenge-title">
+                    <div class="icon">${icon}</div>
+                    <h3>${challenge.name}</h3>
+                    <span class="challenge-status ${statusClass}">${status}</span>
+                </div>
+            </div>
+            <p>${challenge.description || ''}</p>
+            <div class="challenge-details">
+                <p>Progreso actual: ${currentProgress} ${challenge.unit}</p>
+                <p>Meta: ${challenge.goal || challenge.goalPerInterval} ${challenge.unit}</p>
+                <p>Racha: ${challenge.streak || 0} 🔥 días</p>
+            </div>
+            <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
+            <div class="challenge-actions">
+                <button onclick="editChallenge('${challenge.id}')" class="btn-icon edit-btn" title="Editar">✏️</button>
+                <button onclick="deleteChallenge('${challenge.id}')" class="btn-icon delete-btn" title="Eliminar">🗑️</button>
+            </div>
+            ${otherProgressHTML}
+        </div>
+    `;
+
+    setTimeout(() => drawCircularProgress(`progress-${challenge.id}`, progress), 0);
+
+    return cardHTML;
+}
+
+
+
     
     
     
@@ -216,10 +232,19 @@ class App {
     }
 
     calculateProgress(challenge) {
-        const current = parseFloat(challenge.progress) || 0;
         const goal = parseFloat(challenge.goalPerInterval) || 0;
+
+        // 🟨 Para retos diarios, mostrar solo el progreso del día
+        let current = parseFloat(challenge.progress) || 0;
+        if (challenge.interval === 'daily') {
+            const today = new Date().toDateString();
+            const todayProgress = challenge.history?.find(h => new Date(h.date).toDateString() === today);
+            current = todayProgress ? todayProgress.progress : 0;
+        }
+
         return goal > 0 ? Math.min(Math.round((current / goal) * 100), 100) : 0;
     }
+
     
 
     hasProgressOnDay(date) {
