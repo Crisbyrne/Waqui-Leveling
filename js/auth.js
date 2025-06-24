@@ -1,8 +1,6 @@
 class Auth {
     constructor() {
-        // Keep this.users for backward compatibility during migration
         this.users = JSON.parse(localStorage.getItem('users') || '[]');
-        this.firebaseAuth = firebaseAuthService;
     }
 
     generateUID() {
@@ -13,58 +11,60 @@ class Auth {
         });
     }
 
-    async register(name, email, password) {
-        try {
-            // Register user with Firebase
-            await this.firebaseAuth.register(name, email, password);
-            
-            // For compatibility with legacy code during migration
-            const user = {
-                id: this.firebaseAuth.currentUser?.id || this.generateUID(),
-                name,
-                email,
-                password: this.hashPassword(password), // Keep for backward compatibility
-                avatar: null,
-                stars: 0,
-                createdAt: new Date().toISOString()
-            };
-            
-            this.users.push(user);
-            localStorage.setItem('users', JSON.stringify(this.users));
-            
-            // Navigation is handled by the Firebase auth state change listener
-        } catch (error) {
-            console.error("Registration error:", error.message);
-            throw new Error(error.message || 'Error during registration');
+    register(name, email, password) {
+        // Validar que el email no esté en uso
+        if (this.users.some(user => user.email === email)) {
+            throw new Error('El email ya está registrado');
         }
+
+        // Crear nuevo usuario
+        const user = {
+            id: this.generateUID(),
+            name,
+            email,
+            password: this.hashPassword(password),
+            avatar: null,
+            stars: 0, 
+            createdAt: new Date().toISOString()
+        };
+
+
+        // Guardar usuario
+        this.users.push(user);
+        localStorage.setItem('users', JSON.stringify(this.users));
+
+        // Iniciar sesión automáticamente
+        this.login(email, password);
     }
 
-    async login(email, password) {
-        try {
-            // Login with Firebase
-            await this.firebaseAuth.login(email, password);
-            
-            // Navigation is handled by the Firebase auth state change listener
-        } catch (error) {
-            console.error("Login error:", error.message);
-            throw new Error(error.message || 'Invalid credentials');
+    login(email, password) {
+        const user = this.users.find(u => u.email === email);
+        if (!user || user.password !== this.hashPassword(password)) {
+            throw new Error('Credenciales inválidas');
         }
+
+        // Guardar sesión
+        const session = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            stars: user.stars || 0
+        };
+
+
+        localStorage.setItem('user', JSON.stringify(session));
+        router.navigate('dashboard');
     }
 
-    async logout() {
-        try {
-            await this.firebaseAuth.logout();
-        } catch (error) {
-            console.error("Logout error:", error.message);
-            // Fallback to old method if Firebase logout fails
-            localStorage.removeItem('user');
-            app.currentUser = null;
-            router.navigate('home');
-        }
+    logout() {
+        localStorage.removeItem('user');
+        app.currentUser = null; // Clear the current user in the app
+        router.navigate('home');
     }
 
     hashPassword(password) {
-        // Keep for backward compatibility
+        // En producción usar bcrypt o similar
         return btoa(password);
     }
 }
@@ -73,27 +73,27 @@ class Auth {
 const auth = new Auth();
 
 // Handle registration form submission
-async function handleRegister(event) {
+function handleRegister(event) {
     event.preventDefault();
     const name = document.getElementById('register-name').value;
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
 
     try {
-        await auth.register(name, email, password);
+        auth.register(name, email, password);
     } catch (error) {
         alert(error.message);
     }
 }
 
 // Handle login form submission
-async function handleLogin(event) {
+function handleLogin(event) {
     event.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
     try {
-        await auth.login(email, password);
+        auth.login(email, password);
     } catch (error) {
         alert(error.message);
     }

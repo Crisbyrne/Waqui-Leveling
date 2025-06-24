@@ -2,25 +2,6 @@ class App {
     constructor() {
         this.challenges = JSON.parse(localStorage.getItem('challenges') || '[]');
         this.currentUser = null;
-        this.firebaseAuth = firebaseAuthService;
-        this.firebaseDb = firebaseDbService;
-        
-        // Set up auth state observer
-        firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                // User is signed in
-                this.initializeUserData(user);
-            } else {
-                // User is signed out
-                this.currentUser = null;
-            }
-        });
-        
-        // Try to load current user from localStorage for backward compatibility
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            this.currentUser = JSON.parse(storedUser);
-        }
         
         // Enhanced iOS detection
         this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
@@ -34,33 +15,6 @@ class App {
         // Apply iOS specific fixes
         if (this.isIOS) {
             this.applyIOSFixes();
-        }
-    }
-    
-    async initializeUserData(user) {
-        try {
-            // Get user data from Firestore
-            const userData = await this.firebaseAuth.getCurrentUserData(user.uid);
-            
-            this.currentUser = {
-                id: user.uid,
-                name: userData.name || user.displayName || 'Usuario',
-                email: user.email,
-                stars: userData.stars || 0,
-                avatar: userData.avatar || null,
-                lastStarDate: userData.lastStarDate || null
-            };
-            
-            // Store in localStorage for backward compatibility
-            localStorage.setItem('user', JSON.stringify(this.currentUser));
-            
-            // If user is on a protected page, load dashboard
-            const protectedRoutes = ['dashboard', 'new-challenge', 'calendar', 'profile'];
-            if (protectedRoutes.includes(router.currentRoute)) {
-                this.loadDashboard();
-            }
-        } catch (error) {
-            console.error("Error initializing user data:", error);
         }
     }
 
@@ -105,48 +59,26 @@ class App {
         }
     }
 
-   async loadDashboard() {
-    try {
-        // 🆕 Reinicia los retos diarios si ha cambiado el día
-        const user = this.getCurrentUser();
-        if (user) {
-            await challengeManager.resetDailyChallenges();
-        }
+   loadDashboard() {
+    // 🆕 Reinicia los retos diarios si ha cambiado el día
+    challengeManager.resetDailyChallenges();  
 
-        const challenges = await challengeManager.getUserChallenges();
-        const container = document.querySelector('.challenges-container');
-        if (!container) return;
+    const challenges = challengeManager.getUserChallenges();
+    const container = document.querySelector('.challenges-container');
+    if (!container) return;
 
-        if (!challenges || challenges.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No tienes retos activos</h3>
-                    <p>¡Comienza creando tu primer reto!</p>
-                    <button onclick="router.navigate('new-challenge')" class="btn primary">Crear Reto</button>
-                </div>
-            `;
-            return;
-        }
-
-        // Pre-calculate progress percentages for each challenge
-        const challengesWithProgress = challenges.map(challenge => {
-            const progress = this.calculateProgress(challenge);
-            return { ...challenge, progressPercentage: progress };
-        });
-
-        container.innerHTML = challengesWithProgress.map(challenge => this.createChallengeCard(challenge)).join('');
-    } catch (error) {
-        console.error("Error loading dashboard:", error);
-        const container = document.querySelector('.challenges-container');
-        if (container) {
-            container.innerHTML = `
-                <div class="error-state">
-                    <h3>Error al cargar los retos</h3>
-                    <p>Ocurrió un error al cargar tus retos. Por favor intenta de nuevo más tarde.</p>
-                </div>
-            `;
-        }
+    if (challenges.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>No tienes retos activos</h3>
+                <p>¡Comienza creando tu primer reto!</p>
+                <button onclick="router.navigate('new-challenge')" class="btn primary">Crear Reto</button>
+            </div>
+        `;
+        return;
     }
+
+    container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
 }
  
    
@@ -363,30 +295,17 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
         return this.currentUser;
     }
 
-    async updateProfile() {
+    updateProfile() {
         const user = this.getCurrentUser();
         if (!user) return;
 
         const newName = document.getElementById('profile-name').value;
-        if (!newName.trim()) {
-            alert('El nombre no puede estar vacío');
-            return;
-        }
+        user.name = newName;
 
-        try {
-            // Update user in Firebase
-            await this.firebaseAuth.updateProfile(user.id, { name: newName });
-            
-            // Update current user in memory and localStorage
-            user.name = newName;
-            this.currentUser = user;
-            localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
+        this.currentUser = user;
 
-            alert('Perfil actualizado correctamente');
-        } catch (error) {
-            console.error("Error updating profile:", error);
-            alert('Error al actualizar el perfil: ' + error.message);
-        }
+        alert('Perfil actualizado correctamente');
     }
 
     getAvatarBasedOnStreak(user) {
