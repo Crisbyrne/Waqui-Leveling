@@ -8,7 +8,9 @@ class Router {
             'new-challenge': 'new-challenge-template',
             'calendar': 'calendar-template',
             'profile': 'profile-template',
-            'informacion': 'informacion-template' 
+            'informacion': 'informacion-template' ,
+            'crew': 'crew-template' 
+
 
         };
         
