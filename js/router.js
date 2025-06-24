@@ -7,7 +7,9 @@ class Router {
             'dashboard': 'dashboard-template',
             'new-challenge': 'new-challenge-template',
             'calendar': 'calendar-template',
-            'profile': 'profile-template'
+            'profile': 'profile-template',
+            'informacion': 'informacion-template' 
+
         };
         
         this.currentRoute = 'home';
@@ -82,8 +84,29 @@ class Router {
     }
 
     initializePage(route) {
+
+            if (route !== 'home') {
+        // Esperar 1 segundo antes de detener el confetti
+        setTimeout(() => {
+            if (window._confettiIntervalId) {
+                clearInterval(window._confettiIntervalId);
+                window._confettiIntervalId = null;
+            }
+        }, 10); // puedes ajustar a 500 si prefieres
+
+        // También limpia los elementos visuales existentes
+        setTimeout(() => {
+            const confettis = document.querySelectorAll('.confetti-home');
+            confettis.forEach(c => c.remove());
+        }, 2000);
+    }
+
+
         try {
             switch (route) {
+                case 'home':
+                    lanzarConfettiInicio(); 
+                    break;
                 case 'dashboard':
                     app.loadDashboard();
                     break;

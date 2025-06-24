@@ -22,10 +22,12 @@ class Auth {
             id: this.generateUID(),
             name,
             email,
-            password: this.hashPassword(password), // En producción usar bcrypt o similar
+            password: this.hashPassword(password),
             avatar: null,
+            stars: 0, 
             createdAt: new Date().toISOString()
         };
+
 
         // Guardar usuario
         this.users.push(user);
@@ -46,8 +48,10 @@ class Auth {
             id: user.id,
             name: user.name,
             email: user.email,
-            avatar: user.avatar
+            avatar: user.avatar,
+            stars: user.stars || 0
         };
+
 
         localStorage.setItem('user', JSON.stringify(session));
         router.navigate('dashboard');

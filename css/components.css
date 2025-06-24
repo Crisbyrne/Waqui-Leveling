@@ -1,12 +1,19 @@
 /* Form Styles */
+/* Centrar login y registro vertical y horizontalmente */
 .form-container {
+    justify-content: center;
+    align-items: center;
     max-width: 500px;
     margin: 0 auto;
     padding: calc(var(--spacing-unit) * 2);
-    background: white;
+    background: var(--background-color);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: var(--vainilla-color);
+    color: var(--text-color);
+
 }
+
+
 
 /* Aseguramos que los estilos del logo no sean afectados por otros componentes */
 .welcome-page .logo-container,
@@ -59,7 +66,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: calc(var(--spacing-unit) * 0.5);
+    margin-bottom: calc(var(--spacing-unit) * 0.8);
 }
 
 .challenge-header h3 {
@@ -68,8 +75,9 @@
 }
 
 .challenge-status {
+    margin-top: 15px;
     padding: 4px 8px;
-    border-radius: calc(var(--border-radius) * 0.5);
+    border-radius: calc(var(--border-radius) * 0.8);
     font-size: 0.9rem;
     font-weight: 600;
 }
@@ -80,8 +88,8 @@
 }
 
 .status-completed {
-    background-color: rgba(76, 175, 80, 0.1);
-    color: var(--success-color);
+    background-color: var(--success-color);
+    color: var(--lightvainilla-color);
 }
 
 .challenge-card p {
@@ -126,7 +134,7 @@
 
 .progress-bar-fill {
     height: 100%;
-    background: var(--primary-color);
+    background: var(--strong-color);
     transition: width 0.3s ease;
 }
 
@@ -176,7 +184,7 @@
 
 /* Navigation */
 .nav-bar {
-    background: white;
+    background: var(--nav-bar);
     padding: var(--spacing-unit);
     margin-bottom: var(--spacing-unit);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -193,10 +201,13 @@
     padding: 8px 16px;
     border-radius: var(--border-radius);
     transition: background-color 0.2s;
+    color: white;
 }
 
 .nav-item:hover {
-    background-color: var(--background-color);
+    background-color: var(--darkvainilla-color);
+        color: black;
+
 }
 
 /* Responsive adjustments */

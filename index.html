@@ -27,50 +27,43 @@
     </div>
 
     <!-- Templates de las páginas -->
-    <template id="home-template">
-        <div class="welcome-page">
-            <div class="header-section">
-                <div class="logo-container">
-                    <!-- 
-                        Para usar tu propia imagen:
-                        1. Guarda tu imagen en la carpeta 'img/'
-                        2. Reemplaza 'waqui-logo.png' con el nombre de tu archivo
-                        Por ejemplo: si tu imagen se llama 'mi-logo.jpg', cambia a:
-                        src="img/mi-logo.jpg"
-                    -->
-                    <img src="img/logo.jpeg" alt="Waqui Leveling Logo" class="main-logo">
-                </div>
-                <div class="title-container">
-                    <h1>Bienvenido a Waqui Leveling</h1>
-                    <p>Tu plataforma para alcanzar tus metas personales</p>
-                </div>
-            </div>
-            <div class="button-group">
-                <button onclick="router.navigate('login')" class="btn primary">Iniciar Sesión</button>
-                <button onclick="router.navigate('register')" class="btn secondary">Registrarse</button>
-            </div>
-        </div>
-    </template>
+<template id="home-template">
+  <div class="welcome-page">
+
+    <img src="img/logo.jpeg" alt="Waqui Leveling Logo" class="main-logo" />
+    <h1 class="welcome-title">Bienvenid@!</h1> 
+    <p class="welcome-subtitle">Es momento de cumplir tus metas</p>
+
+    <div class="button-group">
+      <button onclick="router.navigate('login')" class="btn primary">Iniciar Sesión</button>
+      <button onclick="router.navigate('register')" class="btn secondary">Registrarse</button>
+    </div>
+  </div>
+
+</template>
+
+
 
 
 <!-- Inicio sesión -->   
     <template id="login-template">
         <div class="form-container">
-            <h2>Iniciar Sesión</h2>
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Contraseña</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                <button type="submit" class="btn primary">Iniciar Sesión</button>
-            </form>
-            <p>¿No tienes una cuenta? <a href="#" onclick="router.navigate('register')">Regístrate</a></p>
-        </div>
+        <h2>Iniciar Sesión</h2>
+        <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required />
+            </div>
+            <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" required />
+            </div>
+            <button type="submit" class="btn primary">Iniciar Sesión</button>
+        </form>
+        <p>¿No tienes una cuenta? <a href="#" onclick="router.navigate('register')">Regístrate</a></p>
+    </div>
     </template>
+
 <!-- Registro -->   
 
     <template id="register-template">
@@ -105,6 +98,7 @@
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
                 <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
         </nav>
@@ -123,6 +117,7 @@
             <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
             <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
             <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+            <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
             <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
           </ul>
         </nav>
@@ -137,8 +132,8 @@
             </div>
       
             <!-- Descripción -->
-            <div class="form-group styled-goal-input">
-                <label for="challenge-description">Descripción</label>
+            <div class="form-group">
+                <label for="challenge-description">Descripción*</label>
               <textarea id="challenge-description" ></textarea>
             </div>
             <!-- Categoría -->
@@ -168,8 +163,8 @@
             </div>
       
             <!--  meta / cantidad / frecuencia -->
-            <div class="form-group styled-goal-input">
-                <label class="meta-label">Meta:</label>
+            <div class="form-group">
+            <label for="meta-label">Meta:</label>
                 <div class="meta-inputs-inline">
                   <input type="number" id="challenge-goal-interval" placeholder="Meta" required>
                   <input type="text" id="challenge-unit" placeholder="cantidad" required>
@@ -182,16 +177,52 @@
                 </div>
               </div>
               
-              
+
       
       
             <!-- Fecha límite opcional (puedes quitarlo si no lo usas) -->
-            <div class="form-group styled-goal-input">
-                <label for="challenge-deadline">Fecha límite</label>
+            <div class="form-group">
+                <label for="challenge-deadline">Fecha límite*</label>
               <input type="date" id="challenge-deadline">
             </div>
+            <div class="form-group styled-goal-input">
+                <label for="challenge-deadline">*Campos opcionales</label>
+            </div>
+
+            <div class="form-group">
+                <label for="apuesta-tipo">¿Deseas hacer una apuesta?</label>
+                <select id="apuesta-tipo">
+                    <option value="">Sin apuesta</option>
+                    <option value="amigos">Con Waqui-Crew</option>
+                    <option value="plataforma">Con Waqui-levelling</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="apuesta-detalle-group" style="display: none;">
+                <label for="apuesta-detalle">Monto de apuesta</label>
+                <input type="number" id="apuesta-detalle" min="0" placeholder="Ej: 10">
+                
+                <select id="apuesta-moneda">
+                    <option value="plata">Plata</option>
+                    <option value="estrellas">Estrellas</option>
+                </select>
+            </div>
+
+            <script>
+                document.getElementById('apuesta-tipo').addEventListener('change', function () {
+                    const tipo = this.value;
+                    const detalleGroup = document.getElementById('apuesta-detalle-group');
+                    if (tipo === "amigos" || tipo === "plataforma") {
+                        detalleGroup.style.display = "block";
+                    } else {
+                        detalleGroup.style.display = "none";
+                    }
+                });
+                </script>
+
+
       
-            <button type="submit" class="btn primary">Crear Reto</button>
+            <button type="submit" class="btn create goal">Crear Reto</button>
           </form>
         </div>
       </template>
@@ -208,11 +239,38 @@
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
                 <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
         </nav>
         <div class="calendar-container">
             <!-- El calendario se cargará aquí dinámicamente -->
+        </div>
+    </template>
+
+<!-- Información -->   
+
+    <template id="informacion-template">
+        <nav class="nav-bar">
+            <ul class="nav-list">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+        </nav>
+        <div class="form-container">
+          <h1>Información Relevante</h1>
+          <h2>Bienvenidos a la versión beta ultra beta de Waqui-levelling, al momento toda la creación de retos personales es posible. Conforme estos
+            se vayan cumpliendo se podrán ganar estrellas y rachas. Las rachas dicen cuantos días seguidos llevas cumpliendo un
+            reto y las estrellas te suman puntos por cada día con un reto completado.
+            Por otro lado, se pueden realizar retos colaborativos en donde podrás ver el avance de tu Waqui-crew (tus amigos)
+            Para poder motivarse más hemos incorporado un sistema de apuestas. Por ahora las apuestas monetarias con la plataforma no son aceptadas
+            pero en la siguiente versión si lo serán. Las apuestas y el cumplimiento dependen al 100% del usuario, si las quieres cumplir o no depende únicamente de ti.
+          </h2>
+
         </div>
     </template>
 
@@ -225,6 +283,7 @@
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
                 <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
         </nav>
@@ -238,5 +297,13 @@
     <script src="js/app.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/challenges.js"></script>
+    <script src="js/edit_challenges.js"></script>
+    <script src="js/animations.js"></script>
+
+
+
+>
+
 </body>
 </html> 
+

@@ -20,6 +20,21 @@ class ChallengeManager {
     const allParticipants = data.participants || [user.id];
     const icon = data.icon;
 
+    const tipoApuesta = document.getElementById('apuesta-tipo').value;
+    const montoApuesta = document.getElementById('apuesta-detalle').value;
+    const monedaApuesta = document.getElementById('apuesta-moneda').value;
+
+    const apuesta = (tipoApuesta && montoApuesta)
+    ? {
+        tipo: tipoApuesta, // 'amigos' o 'plataforma'
+        detalle: {
+            monto: parseFloat(montoApuesta),
+            moneda: monedaApuesta // 'plata' o 'estrellas'
+        }
+        }
+    : null;
+
+
     allParticipants.forEach(participantId => {
         const challenge = {
             id: this.generateUID(), // único por participante
@@ -39,7 +54,8 @@ class ChallengeManager {
             streak: 0,
             createdAt: new Date().toISOString(),
             lastResetDate: new Date().toDateString(),
-            history: []
+            history: [],
+            apuesta
         };
 
         this.challenges.push(challenge);
@@ -101,6 +117,25 @@ class ChallengeManager {
     } catch (error) {
         alert('Error al actualizar el progreso: ' + error.message);
     }
+
+    const user = app.getCurrentUser();
+    const allUsers = auth.users;
+    const i = allUsers.findIndex(u => u.id === user.id);
+    const today = new Date().toDateString();
+
+    const yaSumoEstrella = user.lastStarDate === today;
+
+    if (progreso >= 100 && !yaSumoEstrella) {
+        user.stars = (user.stars || 0) + 1;
+        user.lastStarDate = today;
+
+        // Persistir cambios
+        allUsers[i] = user;
+        localStorage.setItem('users', JSON.stringify(allUsers));
+        localStorage.setItem('user', JSON.stringify(user)); // también actualiza sesión
+    }
+
+
 }
 
 

@@ -121,10 +121,13 @@ class App {
 
         container.innerHTML = `
             <div class="profile-header">
-                <img src="${user.avatar || 'img/default-avatar.png'}" alt="Avatar" class="profile-avatar">
+            <img src="${this.getAvatarBasedOnStreak(user)}" alt="Avatar" class="profile-avatar">
                 <h2>${user.name}</h2>
                 <p>${user.email}</p>
+                <p>⭐= ${user.stars || 0}</p>
+
             </div>
+
             <div class="form-container">
                 <div class="form-group">
                     <label>Nombre</label>
@@ -150,26 +153,50 @@ createChallengeCard(challenge) {
         currentProgress = todayEntry ? todayEntry.progress : 0;
     }
 
+    let apuestaHTML = '';
+    if (challenge.apuesta) {
+        const { tipo, detalle } = challenge.apuesta;
+        apuestaHTML = `
+            <p><strong>Apuesta:</strong> ${detalle.monto} ${detalle.moneda} (${tipo === 'amigos' ? 'Con amigos' : 'Con la plataforma'})</p>
+        `;
+    }
+
+
+
     const status = progress >= 100 ? 'Completado' : 'En progreso';
     const statusClass = progress >= 100 ? 'status-completed' : 'status-in-progress';
     const icon = challenge.icon || '📘';
+const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.participants?.length > 1) ? `
+    <div class="participant-progress">
+        <h4>Avance de Waqui-Crew:</h4>
+        <div class="participant-progress-list">
+            ${challenge.participants
+                .filter(pid => pid !== app.getCurrentUser().id)
+                .map(pid => {
+                    const other = challengeManager.challenges.find(c => c.userId === pid && c.sharedId === challenge.sharedId);
+                    const user = auth.users.find(u => u.id === pid);
+                    const name = user?.name || 'Invitado';
+                    const p = other?.progress || 0;
+                    const goal = other?.goalPerInterval || 0;
+                    const percent = goal > 0 ? Math.min(100, Math.round((p / goal) * 100)) : 0;
 
-    const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.participants?.length > 1) ? `
-        <div class="participant-progress">
-            <h4>Avance de compañeros:</h4>
-            <ul>
-                ${challenge.participants
-                    .filter(pid => pid !== app.getCurrentUser().id)
-                    .map(pid => {
-                        const other = challengeManager.challenges.find(c => c.userId === pid && c.sharedId === challenge.sharedId);
-                        const user = auth.users.find(u => u.id === pid);
-                        const name = user?.name || 'Invitado';
-                        const p = other?.progress || 0;
-                        return `<li>${name}: ${p} ${challenge.unit}</li>`;
-                    }).join('')}
-            </ul>
+                    return `
+                        <div class="participant-horizontal">
+                            <span class="participant-name">${name}</span>
+                            <div class="horizontal-bar">
+                                <div class="horizontal-fill" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="participant-percent">${percent}%</span>
+                        </div>
+                    `;
+                }).join('')}
         </div>
-    ` : '';
+    </div>
+` : '';
+
+
+
+
 
     const cardHTML = `
         <div class="challenge-card" data-id="${challenge.id}">
@@ -190,12 +217,16 @@ createChallengeCard(challenge) {
                 <p>Meta: ${challenge.goal || challenge.goalPerInterval} ${challenge.unit}</p>
                 <p>Racha: ${challenge.streak || 0} 🔥 días</p>
             </div>
-            <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary">Actualizar Progreso</button>
+            ${otherProgressHTML}
+            ${apuestaHTML}
+
+
+
+                        <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary2">Actualizar Progreso</button>
             <div class="challenge-actions">
                 <button onclick="editChallenge('${challenge.id}')" class="btn-icon edit-btn" title="Editar">✏️</button>
                 <button onclick="deleteChallenge('${challenge.id}')" class="btn-icon delete-btn" title="Eliminar">🗑️</button>
             </div>
-            ${otherProgressHTML}
         </div>
     `;
 
@@ -276,6 +307,41 @@ createChallengeCard(challenge) {
 
         alert('Perfil actualizado correctamente');
     }
+
+    getAvatarBasedOnStreak(user) {
+    const streak = user.streak || 0;
+
+    // Si tiene una racha de 4 o más días, usa avatar especial
+    if (streak >= 4) {
+        return 'img/streak-avatar.png'; // Asegúrate de que este archivo exista en esa ruta
+    }
+
+    return user.avatar || 'img/default-avatar.png';
+}
+
+calculateUserStreak(user) {
+    const today = new Date();
+    let streak = 0;
+
+    const progressDates = (user.challengeHistory || [])
+        .map(h => new Date(h.date).toDateString());
+
+    for (let i = 0; i < 100; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toDateString();
+
+        if (progressDates.includes(dateStr)) {
+            streak++;
+        } else {
+            break;
+        }
+    }
+
+    return streak;
+}
+
+
 }
 
 // Initialize app
@@ -300,7 +366,9 @@ function drawCircularProgress(canvasId, percent) {
     // Progreso verde
     ctx.beginPath();
     ctx.arc(radius, radius, radius - lineWidth / 2, -Math.PI / 2, (2 * Math.PI) * (percent / 100) - Math.PI / 2);
-    ctx.strokeStyle = '#4caf50';
+    ctx.strokeStyle = '#D89810';
     ctx.lineWidth = lineWidth;
     ctx.stroke();
 }
+
+
