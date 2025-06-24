@@ -58,6 +58,9 @@ class Router {
     
             // Update current route
             this.currentRoute = route;
+            // Oculta o muestra la barra según la página
+            this.toggleNav(route);
+
     
             // Clear and update content
             const appContainer = document.getElementById('app');
@@ -83,7 +86,17 @@ class Router {
         return localStorage.getItem('user') !== null;
     }
 
+        /* ─── Mostrar u ocultar el nav global ─────────────────────────────── */
+    toggleNav(route) {
+        const nav = document.getElementById('global-nav');
+        if (!nav) return;
+        const ocultarEn = ['home', 'login', 'register']; // rutas SIN barra
+        nav.style.display = ocultarEn.includes(route) ? 'none' : 'block';
+    }
+
+
     initializePage(route) {
+        
 
             if (route !== 'home') {
         // Esperar 1 segundo antes de detener el confetti

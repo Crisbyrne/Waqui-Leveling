@@ -21,6 +21,26 @@
     </script>
 </head>
 <body>
+<body>
+  <!-- Barra de navegación global -->
+  <nav class="nav-bar" id="global-nav">
+    <div class="nav-wrapper">
+      <ul class="nav-list nav-left">
+        <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+        <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+        <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+        <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+      </ul>
+      <ul class="nav-list nav-right">
+        <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+        <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Aquí SÍ cambia el contenido -->
+
+
     <div id="app">
         <!-- Las diferentes vistas se cargarán aquí dinámicamente -->
     </div>
@@ -91,21 +111,6 @@
 <!-- Pagina de inicio -->   
 
     <template id="dashboard-template">
-        <nav class="nav-bar">
-            <div class="nav-wrapper">
-            <ul class="nav-list nav-left">
-                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-            </ul>
-
-            <ul class="nav-list nav-right">
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-            </ul>
-            </div>
-        </nav>
         <div class="challenges-container">
             <!-- Los retos se cargarán aquí dinámicamente -->
         </div>
@@ -115,21 +120,6 @@
 <!-- Crear reto -->   
 
     <template id="new-challenge-template">
-        <nav class="nav-bar">
-            <div class="nav-wrapper">
-            <ul class="nav-list nav-left">
-                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-            </ul>
-
-            <ul class="nav-list nav-right">
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-            </ul>
-            </div>
-        </nav>
       
         <div class="form-container">
           <h2>Nuevo Reto</h2>
@@ -243,20 +233,6 @@
 
 
 <template id="calendar-template">
-      <nav class="nav-bar">
-    <div class="nav-wrapper">
-      <ul class="nav-list nav-left">
-        <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-        <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-        <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-        <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-      </ul>
-      <ul class="nav-list nav-right">
-        <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-        <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-      </ul>
-    </div>
-  </nav>
   <div class="calendar-page">
     <div id="real-calendar"></div>
   </div>
@@ -268,21 +244,6 @@
 <!-- Información -->   
 
     <template id="informacion-template">
-        <nav class="nav-bar">
-            <div class="nav-wrapper">
-            <ul class="nav-list nav-left">
-                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-            </ul>
-
-            <ul class="nav-list nav-right">
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-            </ul>
-            </div>
-        </nav>
 
         <div class="information-container">
         <div class="information-container" style="margin-left: 40px;">
@@ -327,21 +288,6 @@
 <!-- Perfil -->   
 
     <template id="profile-template">
-        <nav class="nav-bar">
-            <div class="nav-wrapper">
-            <ul class="nav-list nav-left">
-                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-            </ul>
-
-            <ul class="nav-list nav-right">
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-            </ul>
-            </div>
-        </nav>
         <div class="profile-container">
             <!-- El perfil se cargará aquí dinámicamente -->
         </div>
