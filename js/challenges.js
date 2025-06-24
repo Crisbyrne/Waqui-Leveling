@@ -1,6 +1,8 @@
 class ChallengeManager {
     constructor() {
+        // Keep this.challenges for backward compatibility during migration
         this.challenges = JSON.parse(localStorage.getItem('challenges') || '[]');
+        this.firebaseDb = firebaseDbService;
     }
 
     generateUID() {
@@ -11,142 +13,119 @@ class ChallengeManager {
         });
     }
 
-    createChallenge(data) {
-    const user = app.getCurrentUser();
-    if (!user) throw new Error('Usuario no autenticado');
+    async createChallenge(data) {
+        const user = app.getCurrentUser();
+        if (!user) throw new Error('Usuario no autenticado');
 
-    const sharedId = this.generateUID(); // ID común entre todos los participantes
+        const icon = data.icon;
+        const tipoApuesta = document.getElementById('apuesta-tipo').value;
+        const montoApuesta = document.getElementById('apuesta-detalle').value;
+        const monedaApuesta = document.getElementById('apuesta-moneda').value;
 
-    const allParticipants = data.participants || [user.id];
-    const icon = data.icon;
+        const apuesta = (tipoApuesta && montoApuesta)
+        ? {
+            tipo: tipoApuesta, // 'amigos' o 'plataforma'
+            detalle: {
+                monto: parseFloat(montoApuesta),
+                moneda: monedaApuesta // 'plata' o 'estrellas'
+            }
+            }
+        : null;
 
-    const tipoApuesta = document.getElementById('apuesta-tipo').value;
-    const montoApuesta = document.getElementById('apuesta-detalle').value;
-    const monedaApuesta = document.getElementById('apuesta-moneda').value;
-
-    const apuesta = (tipoApuesta && montoApuesta)
-    ? {
-        tipo: tipoApuesta, // 'amigos' o 'plataforma'
-        detalle: {
-            monto: parseFloat(montoApuesta),
-            moneda: monedaApuesta // 'plata' o 'estrellas'
+        try {
+            // Extract participants from input if collaborative
+            let participants = [user.id];
+            
+            if (data.type === 'colaborativo') {
+                const emailsInput = document.getElementById('challenge-participants').value;
+                if (emailsInput) {
+                    const emails = emailsInput.split(',').map(e => e.trim()).filter(e => e);
+                    
+                    // For Firebase migration, use the actual user IDs instead of emails
+                    // Note: In a real app, you would need to query Firebase to get user IDs from emails
+                    const foundUsers = auth.users.filter(u => emails.includes(u.email));
+                    const participantIds = foundUsers.map(u => u.id);
+                    
+                    if (participantIds.length > 0) {
+                        participants = [user.id, ...participantIds];
+                    }
+                }
+            }
+            
+            // Create the challenge in Firebase
+            data.participants = participants;
+            data.icon = icon;
+            data.apuesta = apuesta;
+            
+            await this.firebaseDb.createChallenge(data, user.id);
+            
+            // For backward compatibility, update the local storage as well
+            this.loadChallengesFromFirebase();
+            
+        } catch (error) {
+            console.error("Error creating challenge:", error);
+            throw error;
         }
-        }
-    : null;
-
-
-    allParticipants.forEach(participantId => {
-        const challenge = {
-            id: this.generateUID(), // único por participante
-            sharedId: sharedId,
-            userId: participantId,
-            name: data.name,
-            description: data.description,
-            type: data.type,
-            unit: data.unit,
-            goalPerInterval: parseFloat(data.goalPerInterval),
-            interval: data.interval,
-            deadline: data.deadline,
-            category: data.category,
-            icon: icon,
-            participants: allParticipants,
-            progress: 0,
-            streak: 0,
-            createdAt: new Date().toISOString(),
-            lastResetDate: new Date().toDateString(),
-            history: [],
-            apuesta
-        };
-
-        this.challenges.push(challenge);
-    });
-
-    this.saveChanges();
-}
-
-
+    }
     
-    updateProgress(challengeId) {
-    const challenge = this.getChallenge(challengeId);
-    if (!challenge) {
-        alert('Reto no encontrado o no tienes permiso para modificarlo');
-        return;
-    }
-
-    const input = prompt(`Ingresa cuánto has avanzado en "${challenge.name}" (${challenge.unit}):`);
-    if (input === null) return;
-
-    const addedProgress = parseFloat(input);
-    if (isNaN(addedProgress)) {
-        alert('Por favor ingresa un número válido');
-        return;
-    }
-
-    try {
-        const todayStr = new Date().toDateString();
-
-        // Buscar si ya hay entrada para hoy en el historial
-        let todayEntry = challenge.history.find(h => new Date(h.date).toDateString() === todayStr);
-
-        if (todayEntry) {
-            todayEntry.progress += addedProgress;
-        } else {
-            todayEntry = {
-                date: new Date().toISOString(),
-                progress: addedProgress
-            };
-            challenge.history.push(todayEntry);
+    async updateProgress(challengeId) {
+        const challenge = await this.getChallengeFromFirebase(challengeId);
+        if (!challenge) {
+            alert('Reto no encontrado o no tienes permiso para modificarlo');
+            return;
         }
 
-        // Actualizar progreso total
-        if (challenge.interval === 'daily') {
-            challenge.progress = todayEntry.progress;
-        } else {
-            challenge.progress += addedProgress;
+        const input = prompt(`Ingresa cuánto has avanzado en "${challenge.name}" (${challenge.unit}):`);
+        if (input === null) return;
+
+        const addedProgress = parseFloat(input);
+        if (isNaN(addedProgress)) {
+            alert('Por favor ingresa un número válido');
+            return;
         }
 
-        challenge.lastResetDate = todayStr;
-
-        this.saveChanges();
-
-        const card = document.querySelector(`[data-id="${challengeId}"]`);
-        if (card) {
-            card.outerHTML = app.createChallengeCard(challenge);
+        try {
+            // Update progress in Firebase
+            const updatedChallenge = await this.firebaseDb.updateProgress(challengeId, addedProgress);
+            
+            // Update the UI
+            const card = document.querySelector(`[data-id="${challengeId}"]`);
+            if (card) {
+                // Recalculate progress percentage for UI
+                const progress = this.firebaseDb.calculateProgress(updatedChallenge);
+                updatedChallenge.progressPercentage = progress;
+                
+                card.outerHTML = app.createChallengeCard(updatedChallenge);
+            }
+            
+            // Check if challenge is completed to award stars
+            const user = app.getCurrentUser();
+            if (!user) return;
+            
+            const progress = this.firebaseDb.calculateProgress(updatedChallenge);
+            const today = new Date().toDateString();
+            const yaSumoEstrella = user.lastStarDate === today;
+            
+            if (progress >= 100 && !yaSumoEstrella) {
+                const newStars = (user.stars || 0) + 1;
+                await firebaseAuthService.updateStars(user.id, newStars);
+            }
+            
+            // Refresh challenges from Firebase
+            await this.loadChallengesFromFirebase();
+            
+        } catch (error) {
+            console.error("Error updating progress:", error);
+            alert('Error al actualizar el progreso: ' + error.message);
         }
-
-    } catch (error) {
-        alert('Error al actualizar el progreso: ' + error.message);
     }
 
-    const user = app.getCurrentUser();
-    const allUsers = auth.users;
-    const i = allUsers.findIndex(u => u.id === user.id);
-    const today = new Date().toDateString();
-
-    const yaSumoEstrella = user.lastStarDate === today;
-
-    if (progreso >= 100 && !yaSumoEstrella) {
-        user.stars = (user.stars || 0) + 1;
-        user.lastStarDate = today;
-
-        // Persistir cambios
-        allUsers[i] = user;
-        localStorage.setItem('users', JSON.stringify(allUsers));
-        localStorage.setItem('user', JSON.stringify(user)); // también actualiza sesión
-    }
-
-
-}
-
-
-
-    
-    
-
-    getExpectedProgress(challenge) {
+    async getExpectedProgress(challenge) {
         if (!challenge.goalPerInterval || !challenge.interval) return null;
 
-        const start = new Date(challenge.createdAt);
+        const start = challenge.createdAt instanceof firebase.firestore.Timestamp 
+            ? challenge.createdAt.toDate() 
+            : new Date(challenge.createdAt);
         const now = new Date();
         const msPerDay = 1000 * 60 * 60 * 24;
 
@@ -166,70 +145,130 @@ class ChallengeManager {
         return intervalsPassed * challenge.goalPerInterval;
     }
 
-    getUserChallenges() {
+    async getUserChallenges() {
         const user = app.getCurrentUser();
         if (!user || !user.id) return [];
 
-        return this.challenges.filter(challenge => challenge.userId === user.id);
+        try {
+            // Get challenges from Firebase
+            const challenges = await this.firebaseDb.getUserChallenges(user.id);
+            
+            // Store in local this.challenges for backward compatibility
+            this.challenges = challenges;
+            
+            return challenges;
+        } catch (error) {
+            console.error("Error getting user challenges:", error);
+            // Fallback to local storage if Firebase fails
+            return this.challenges.filter(challenge => challenge.userId === user.id);
+        }
+    }
+
+    async getChallengeFromFirebase(challengeId) {
+        try {
+            return await this.firebaseDb.getChallenge(challengeId);
+        } catch (error) {
+            console.error("Error getting challenge from Firebase:", error);
+            return null;
+        }
     }
 
     getChallenge(challengeId) {
         const user = app.getCurrentUser();
         if (!user || !user.id) return null;
 
+        // First try from local cache
         const challenge = this.challenges.find(c => c.id === challengeId);
         return challenge && challenge.userId === user.id ? challenge : null;
     }
 
-    deleteChallenge(challengeId) {
-        const index = this.challenges.findIndex(c => c.id === challengeId);
-        if (index === -1) {
-            throw new Error('Reto no encontrado');
+    async deleteChallenge(challengeId) {
+        try {
+            // Delete from Firebase
+            await this.firebaseDb.deleteChallenge(challengeId);
+            
+            // Update local cache
+            const index = this.challenges.findIndex(c => c.id === challengeId);
+            if (index !== -1) {
+                this.challenges.splice(index, 1);
+                this.saveChanges();
+            }
+        } catch (error) {
+            console.error("Error deleting challenge:", error);
+            throw error;
         }
-
-        const user = app.getCurrentUser();
-        if (!user || this.challenges[index].userId !== user.id) {
-            throw new Error('No tienes permiso para eliminar este reto');
-        }
-
-        this.challenges.splice(index, 1);
-        this.saveChanges();
     }
 
+    // For backward compatibility
     saveChanges() {
         localStorage.setItem('challenges', JSON.stringify(this.challenges));
     }
 
-resetDailyChallenges() {
-    const today = new Date().toDateString();
+    async resetDailyChallenges() {
+        const user = app.getCurrentUser();
+        if (!user || !user.id) return;
 
-    this.challenges.forEach(challenge => {
-        if (challenge.interval === 'daily' && challenge.lastResetDate !== today) {
-            if (challenge.progress >= challenge.goalPerInterval) {
-                challenge.streak = (challenge.streak || 0) + 1;
-            } else {
-                challenge.streak = 0;
-            }
+        try {
+            // Reset daily challenges in Firebase
+            await this.firebaseDb.resetDailyChallenges(user.id);
+            
+            // Refresh challenges from Firebase
+            await this.loadChallengesFromFirebase();
+        } catch (error) {
+            console.error("Error resetting daily challenges:", error);
+            
+            // Fallback to local storage method
+            const today = new Date().toDateString();
 
-            challenge.progress = 0;
-            challenge.lastResetDate = today;
+            this.challenges.forEach(challenge => {
+                if (challenge.interval === 'daily' && challenge.lastResetDate !== today) {
+                    if (challenge.progress >= challenge.goalPerInterval) {
+                        challenge.streak = (challenge.streak || 0) + 1;
+                    } else {
+                        challenge.streak = 0;
+                    }
+
+                    challenge.progress = 0;
+                    challenge.lastResetDate = today;
+                }
+            });
+
+            this.saveChanges();
         }
-    });
+    }
 
-    this.saveChanges();
-}
-
-
-
+    async loadChallengesFromFirebase() {
+        const user = app.getCurrentUser();
+        if (!user || !user.id) return;
+        
+        try {
+            this.challenges = await this.firebaseDb.getUserChallenges(user.id);
+            this.saveChanges(); // Update localStorage for backward compatibility
+        } catch (error) {
+            console.error("Error loading challenges from Firebase:", error);
+        }
+    }
 
 }
 
 // Inicializar el gestor de retos
 const challengeManager = new ChallengeManager();
 
+// Load challenges from Firebase when the app starts
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = app.getCurrentUser();
+    if (user) {
+        try {
+            await challengeManager.loadChallengesFromFirebase();
+        } catch (error) {
+            console.error("Error loading initial challenges:", error);
+        }
+    }
+});
+
 // Manejar envío del formulario para crear un reto
 /* ---------- handleNewChallenge ---------- */
-function handleNewChallenge(event) {
+async function handleNewChallenge(event) {
     event.preventDefault();
 
     const isEditing = !!localStorage.getItem('editingChallenge');
@@ -248,63 +287,42 @@ function handleNewChallenge(event) {
     let participants = [app.getCurrentUser().id];
 
     if (document.getElementById('challenge-type').value === 'colaborativo') {
-        const emailsRaw = document.getElementById('challenge-participants');
-        if (emailsRaw) {
-            const participantEmails = emailsRaw.value
-                .split(',')
-                .map(e => e.trim())
-                .filter(e => e !== '');
-
-            const allUsers = auth.users;
-
-            participantEmails.forEach(email => {
-                const user = allUsers.find(u => u.email === email);
-                if (user && !participants.includes(user.id)) {
-                    participants.push(user.id);
-                }
-            });
+        const emailsInput = document.getElementById('challenge-participants').value;
+        if (emailsInput) {
+            const emails = emailsInput.split(',').map(e => e.trim()).filter(e => e);
+            const foundUsers = auth.users.filter(u => emails.includes(u.email));
+            const participantIds = foundUsers.map(u => u.id);
+            participants = [...participants, ...participantIds];
         }
     }
 
-
-    const data = {
-        name: document.getElementById('challenge-name').value.trim(),
-        description: document.getElementById('challenge-description').value.trim(),
-        type: document.getElementById('challenge-type').value,
-        unit: document.getElementById('challenge-unit').value.trim(),
-        goalPerInterval: document.getElementById('challenge-goal-interval').value,
-        interval: document.getElementById('challenge-interval').value,
-        deadline: document.getElementById('challenge-deadline').value || null,
+    const challengeData = {
+        name: document.getElementById('challenge-name').value,
+        description: document.getElementById('challenge-description').value,
         category: category,
-        icon: icons[categorySelect] || '🌀',
-        participants: participants // ✅ importante
+        type: document.getElementById('challenge-type').value,
+        goalPerInterval: document.getElementById('challenge-goal-interval').value,
+        unit: document.getElementById('challenge-unit').value,
+        interval: document.getElementById('challenge-interval').value,
+        deadline: document.getElementById('challenge-deadline').value,
+        icon: icons[category] || icons.custom,
+        participants: participants
     };
 
-    if (isEditing) {
-        const challenge = JSON.parse(localStorage.getItem('editingChallenge'));
-        const index = challengeManager.challenges.findIndex(c => c.id === challenge.id);
-        if (index !== -1) {
-            challengeManager.challenges[index] = {
-                ...challengeManager.challenges[index],
-                ...data
-            };
-            challengeManager.saveChanges();
-            localStorage.removeItem('editingChallenge');
-            router.navigate('dashboard');
-            return;
-        }
-    }
-
     try {
-        challengeManager.createChallenge(data); // ✅ usa el objeto con participantes
+        if (isEditing) {
+            const editingChallenge = JSON.parse(localStorage.getItem('editingChallenge'));
+            await challengeManager.firebaseDb.updateChallenge(editingChallenge.id, challengeData);
+            localStorage.removeItem('editingChallenge');
+        } else {
+            await challengeManager.createChallenge(challengeData);
+        }
         router.navigate('dashboard');
-    } catch (err) {
-        alert(err.message);
+    } catch (error) {
+        console.error("Error handling challenge form:", error);
+        alert('Error: ' + error.message);
     }
 }
-
-
-  
 
 // Manejar actualización de progreso
 function handleProgressUpdate(challengeId) {
@@ -388,11 +406,7 @@ function renderChallenge(challenge) {
     return challengeHTML;
 }
 
-
-
-
-    // Editar y eliminar retos
-
+// Editar y eliminar retos
 function deleteChallenge(challengeId) {
     if (!confirm("¿Estás seguro de que quieres eliminar este reto? Esta acción no se puede deshacer.")) return;
 
