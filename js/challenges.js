@@ -135,6 +135,7 @@ class ChallengeManager {
         localStorage.setItem('user', JSON.stringify(user)); // también actualiza sesión
     }
 
+    if (window.location.hash === '#calendar') app.loadCalendar();
 
 }
 

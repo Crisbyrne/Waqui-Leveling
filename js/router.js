@@ -111,8 +111,25 @@ class Router {
                     app.loadDashboard();
                     break;
                 case 'calendar':
-                    app.loadCalendar();
+                    setTimeout(() => {
+                        const calendarEl = document.getElementById('real-calendar');
+                        if (calendarEl) {
+                            const calendar = new FullCalendar.Calendar(calendarEl, {
+                                initialView: 'dayGridMonth',
+                                locale: 'es',
+                                headerToolbar: {
+                                    left: 'prev,next today',
+                                    center: 'title',
+                                    right: ''
+                                },
+                                events: [] // puedes poner eventos reales aquí luego
+                            });
+                            calendar.render();
+                        }
+                    }, 100);
                     break;
+
+
                 case 'profile':
                     app.loadProfile();
                     break;

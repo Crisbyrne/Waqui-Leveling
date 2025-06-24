@@ -81,36 +81,32 @@ class App {
     container.innerHTML = challenges.map(challenge => this.createChallengeCard(challenge)).join('');
 }
  
-   
-    loadCalendar() {
-        const container = document.querySelector('.calendar-container');
-        if (!container) return;
+loadCalendar() {
+  const el = document.querySelector('#real-calendar');
+  if (!el) return;
 
-        const today = new Date();
-        const month = today.getMonth();
-        const year = today.getFullYear();
+  /* 1️⃣  Prepara los eventos “día cumplido” */
+  const completed = getCompletedDays().map(date => ({
+    title: '✔️ Reto completado',
+    start: date,
+    allDay: true,
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+    textColor: '#ffffff'
+  }));
 
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        
-        const days = [];
-        for (let i = 0; i < firstDay.getDay(); i++) {
-            days.push('');
-        }
-        
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            days.push(i);
-        }
+  /* 2️⃣  Instancia/Render FullCalendar */
+  const calendar = new FullCalendar.Calendar(el, {
+    locale: 'es',
+    height: 'auto',
+    initialView: 'dayGridMonth',
+    events: completed          // ← aquí inyectamos los días cumplidos
+  });
 
-        const calendarHTML = `
-            <h2>${this.getMonthName(month)} ${year}</h2>
-            <div class="calendar-grid">
-                ${this.createCalendarDays(days)}
-            </div>
-        `;
+  calendar.render();
+}
 
-        container.innerHTML = calendarHTML;
-    }
+
 
     loadProfile() {
         const user = this.getCurrentUser();
@@ -369,6 +365,27 @@ function drawCircularProgress(canvasId, percent) {
     ctx.strokeStyle = '#D89810';
     ctx.lineWidth = lineWidth;
     ctx.stroke();
+}
+
+/* ───────── UTILIDAD: devuelve un array de días cumplidos (ISO yyyy-mm-dd) ───────── */
+function getCompletedDays() {
+  const user = app.getCurrentUser();
+  if (!user) return [];
+
+  const challenges = challengeManager.getUserChallenges();      // ← retos del usuario
+  const daysSet = new Set();
+
+  challenges.forEach(ch => {
+    const goal = parseFloat(ch.goalPerInterval) || 0;
+
+    (ch.history || []).forEach(h => {
+      const prog = h.progress || 0;
+      const done = prog >= goal;           // se llegó a la meta del intervalo
+      if (done) daysSet.add(h.date.slice(0, 10));  // yyyy-mm-dd
+    });
+  });
+
+  return Array.from(daysSet);              // → ["2024-05-10","2024-05-12", …]
 }
 
 
