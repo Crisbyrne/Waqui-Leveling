@@ -93,14 +93,19 @@
 
     <template id="dashboard-template">
         <nav class="nav-bar">
-            <ul class="nav-list">
+            <div class="nav-wrapper">
+            <ul class="nav-list nav-left">
                 <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+            </ul>
+
+            <ul class="nav-list nav-right">
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
+            </div>
         </nav>
         <div class="challenges-container">
             <!-- Los retos se cargarán aquí dinámicamente -->
@@ -112,14 +117,19 @@
 
     <template id="new-challenge-template">
         <nav class="nav-bar">
-          <ul class="nav-list">
-            <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
-            <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
-            <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-            <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
-            <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
-            <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
-          </ul>
+            <div class="nav-wrapper">
+            <ul class="nav-list nav-left">
+                <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
+                <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
+                <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
+                <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+            </ul>
+
+            <ul class="nav-list nav-right">
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
+                <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
+            </ul>
+            </div>
         </nav>
       
         <div class="form-container">
@@ -234,14 +244,19 @@
 
     <template id="calendar-template">
         <nav class="nav-bar">
-            <ul class="nav-list">
+            <div class="nav-wrapper">
+            <ul class="nav-list nav-left">
                 <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+            </ul>
+
+            <ul class="nav-list nav-right">
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
+            </div>
         </nav>
         <div class="calendar-container">
             <!-- El calendario se cargará aquí dinámicamente -->
@@ -252,24 +267,57 @@
 
     <template id="informacion-template">
         <nav class="nav-bar">
-            <ul class="nav-list">
+            <div class="nav-wrapper">
+            <ul class="nav-list nav-left">
                 <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+            </ul>
+
+            <ul class="nav-list nav-right">
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
+            </div>
         </nav>
-        <div class="form-container">
-          <h1>Información Relevante</h1>
-          <h2>Bienvenidos a la versión beta ultra beta de Waqui-levelling, al momento toda la creación de retos personales es posible. Conforme estos
-            se vayan cumpliendo se podrán ganar estrellas y rachas. Las rachas dicen cuantos días seguidos llevas cumpliendo un
-            reto y las estrellas te suman puntos por cada día con un reto completado.
-            Por otro lado, se pueden realizar retos colaborativos en donde podrás ver el avance de tu Waqui-crew (tus amigos)
-            Para poder motivarse más hemos incorporado un sistema de apuestas. Por ahora las apuestas monetarias con la plataforma no son aceptadas
-            pero en la siguiente versión si lo serán. Las apuestas y el cumplimiento dependen al 100% del usuario, si las quieres cumplir o no depende únicamente de ti.
-          </h2>
+
+        <div class="information-container">
+        <div class="information-container" style="margin-left: 40px;">
+  <h1> Bienvenido a la versión <em>ultra beta</em> de <strong>Waqui-Levelling 👋</strong></h1>
+  <ol>
+    <li>
+      <strong>🧠 Creación de Retos Personales:</strong><br>
+      Diseña tus propios retos según tus metas, hábitos o intereses. Tú eliges el tipo, la categoría y la frecuencia.
+    </li>
+    <li>
+      <strong>⭐ Sistema de Recompensas: Estrellas y Rachas:</strong><br>
+      - <strong>Estrellas:</strong> Obtienes <em>1 estrella por cada día</em> que completes al menos un reto.<br>
+      - <strong>Rachas:</strong> Se registra cuántos días seguidos has cumplido retos, para incentivar tu constancia.
+    </li>
+    <li>
+      <strong>🤝 Retos Colaborativos (Waqui-Crew):</strong><br>
+      Comparte retos con tus amigos y visualiza el progreso de tu grupo. Ideal para motivarse mutuamente.
+    </li>
+    <li>
+      <strong>🎯 Apuestas de Motivación:</strong><br>
+      Agrega una apuesta opcional a tus retos, ya sea con:<br>
+      - <strong>Tus amigos (Waqui-crew):</strong> usando estrellas o montos ficticios.<br>
+      - <strong>La plataforma:</strong> con recompensas simbólicas. *(Las apuestas monetarias estarán disponibles en versiones futuras)*.
+    </li>
+    <li>
+      <strong>🔐 Responsabilidad del Usuario:</strong><br>
+      El seguimiento y cumplimiento de retos y apuestas depende <em>únicamente de ti</em>. ¡Eres el dueño de tu progreso!
+    </li>
+
+  </ol>
+
+</div>
+    <div class="information-container" style="margin-left: 25px;">
+    <strong> <br> Waqui-levelling sigue en estado de prueba. Cualquier falla o oportunidad de mejora porfavor avisar!</strong><br>
+
+    </div>
+
 
         </div>
     </template>
@@ -278,14 +326,19 @@
 
     <template id="profile-template">
         <nav class="nav-bar">
-            <ul class="nav-list">
+            <div class="nav-wrapper">
+            <ul class="nav-list nav-left">
                 <li class="nav-item" onclick="router.navigate('dashboard')">Mis Retos</li>
                 <li class="nav-item" onclick="router.navigate('new-challenge')">Nuevo Reto</li>
                 <li class="nav-item" onclick="router.navigate('calendar')">Calendario</li>
-                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="router.navigate('informacion')">Información</li>
+            </ul>
+
+            <ul class="nav-list nav-right">
+                <li class="nav-item" onclick="router.navigate('profile')">Perfil</li>
                 <li class="nav-item" onclick="auth.logout()">Cerrar Sesión</li>
             </ul>
+            </div>
         </nav>
         <div class="profile-container">
             <!-- El perfil se cargará aquí dinámicamente -->

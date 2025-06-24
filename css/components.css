@@ -195,6 +195,18 @@
     display: flex;
     gap: var(--spacing-unit);
 }
+.nav-left {
+  justify-content: flex-start;
+}
+.nav-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-right {
+  justify-content: flex-end;
+}
 
 .nav-item {
     cursor: pointer;
@@ -227,6 +239,21 @@
     .form-container {
         margin: var(--spacing-unit);
         max-width: none;
+    }
+
+    .information-container
+    {
+        max-width: none;
+        margin-left: 200px; 
+
+    }
+
+    .texto-normal2
+    {
+        font-weight: normal;
+        font-size: 200px;
+
+
     }
     
     .calendar-grid {
