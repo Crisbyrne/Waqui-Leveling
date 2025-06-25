@@ -321,6 +321,25 @@
 
 >
 
+<!-- ───────── Ventana modal de progreso ───────── -->
+<div id="progress-modal" class="modal">
+  <div class="modal-content">
+    <h3 id="modal-title">Actualizar progreso</h3>
+
+    <label>Progreso actual (editable)</label>
+    <input id="current-progress" type="number" />
+
+    <label>Agregar nuevo progreso</label>
+    <input id="added-progress" type="number" min="0" />
+
+    <div class="modal-actions">
+      <button id="save-progress" class="btn primary">Guardar</button>
+      <button id="cancel-progress" class="btn secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html> 
 

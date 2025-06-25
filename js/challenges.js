@@ -66,78 +66,82 @@ class ChallengeManager {
 
 
     
-    updateProgress(challengeId) {
-    const challenge = this.getChallenge(challengeId);
-    if (!challenge) {
-        alert('Reto no encontrado o no tienes permiso para modificarlo');
-        return;
-    }
+updateProgress(challengeId) {
+  const challenge = this.getChallenge(challengeId);
+  if (!challenge) return alert('Reto no encontrado o no tienes permiso');
 
-    const input = prompt(`Ingresa cuánto has avanzado en "${challenge.name}" (${challenge.unit}):`);
-    if (input === null) return;
+  /* ───── ①  Referencias al modal ───── */
+  const modal    = document.getElementById('progress-modal');
+  const titleEl  = document.getElementById('modal-title');
+  const currEl   = document.getElementById('current-progress');
+  const addEl    = document.getElementById('added-progress');
+  const saveBtn  = document.getElementById('save-progress');
+  const cancelBtn= document.getElementById('cancel-progress');
 
-    const addedProgress = parseFloat(input);
-    if (isNaN(addedProgress)) {
-        alert('Por favor ingresa un número válido');
-        return;
-    }
-
-    try {
-        const todayStr = new Date().toDateString();
-
-        // Buscar si ya hay entrada para hoy en el historial
-        let todayEntry = challenge.history.find(h => new Date(h.date).toDateString() === todayStr);
-
-        if (todayEntry) {
-            todayEntry.progress += addedProgress;
-        } else {
-            todayEntry = {
-                date: new Date().toISOString(),
-                progress: addedProgress
-            };
-            challenge.history.push(todayEntry);
-        }
-
-        // Actualizar progreso total
-        if (challenge.interval === 'daily') {
-            challenge.progress = todayEntry.progress;
-        } else {
-            challenge.progress += addedProgress;
-        }
-
-        challenge.lastResetDate = todayStr;
-
-        this.saveChanges();
-
-        const card = document.querySelector(`[data-id="${challengeId}"]`);
-        if (card) {
-            card.outerHTML = app.createChallengeCard(challenge);
-        }
-
-    } catch (error) {
-        alert('Error al actualizar el progreso: ' + error.message);
-    }
-
-    const user = app.getCurrentUser();
-    const allUsers = auth.users;
-    const i = allUsers.findIndex(u => u.id === user.id);
+  /* ───── ②  Rellenar datos actuales ───── */
+  let current = challenge.progress || 0;
+  if (challenge.interval === 'daily') {
     const today = new Date().toDateString();
+    const entry = challenge.history?.find(h => new Date(h.date).toDateString() === today);
+    current = entry ? entry.progress : 0;
+  }
+  titleEl.textContent = `Actualizar "${challenge.name}" (${challenge.unit})`;
+  currEl.value  = current;
+  addEl.value   = '';
+  modal.style.display = 'flex';
 
-    const yaSumoEstrella = user.lastStarDate === today;
+  /* ───── ③  Handler GUARDAR ───── */
+ saveBtn.onclick = () => {
+  /* valores del formulario */
+  const nuevoActual = parseFloat(currEl.value)  || 0;   // el campo editable
+  const sumaExtra  = parseFloat(addEl.value)   || 0;   // lo que escribió en “agregar”
+  const totalHoy   = nuevoActual + sumaExtra;           // valor final para hoy
+  if (totalHoy < 0) return alert('El progreso no puede ser negativo');
 
-    if (progreso >= 100 && !yaSumoEstrella) {
-        user.stars = (user.stars || 0) + 1;
-        user.lastStarDate = today;
+  const todayStr = new Date().toDateString();
+  let todayEntry = challenge.history.find(h => new Date(h.date).toDateString() === todayStr);
 
-        // Persistir cambios
-        allUsers[i] = user;
-        localStorage.setItem('users', JSON.stringify(allUsers));
-        localStorage.setItem('user', JSON.stringify(user)); // también actualiza sesión
-    }
+  if (todayEntry) {
+    todayEntry.progress = totalHoy;            // ← se establece el valor final
+  } else {
+    todayEntry = { date: new Date().toISOString(), progress: totalHoy };
+    challenge.history.push(todayEntry);
+  }
 
-    if (window.location.hash === '#calendar') app.loadCalendar();
+  /* actualiza la propiedad global */
+  challenge.progress = (challenge.interval === 'daily')
+    ? totalHoy
+    : (challenge.progress - (todayEntry.progress - totalHoy) + totalHoy);
 
+  challenge.lastResetDate = todayStr;
+  this.saveChanges();
+
+  /* refresca tarjeta */
+  const card = document.querySelector(`[data-id="${challengeId}"]`);
+  if (card) card.outerHTML = app.createChallengeCard(challenge);
+
+  /* estrellas (si alcanzó la meta) */
+  const goal = parseFloat(challenge.goalPerInterval) || 0;
+  const user = app.getCurrentUser();
+  if (totalHoy >= goal && user.lastStarDate !== todayStr) {
+    user.stars = (user.stars || 0) + 1;
+    user.lastStarDate = todayStr;
+
+    const allUsers = auth.users;
+    allUsers[allUsers.findIndex(u => u.id === user.id)] = user;
+    localStorage.setItem('users', JSON.stringify(allUsers));
+    localStorage.setItem('user',  JSON.stringify(user));
+  }
+
+  if (location.hash === '#calendar') app.loadCalendar();
+  modal.style.display = 'none';
+};
+
+
+  /* ───── ④  Handler CANCELAR ───── */
+  cancelBtn.onclick = () => (modal.style.display = 'none');
 }
+
 
 
 
