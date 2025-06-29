@@ -85,7 +85,7 @@ class Router {
     }
 
     isAuthenticated() {
-        return localStorage.getItem('user') !== null;
+        return sessionStorage.getItem('user') !== null;
     }
 
         /* ─── Mostrar u ocultar el nav global ─────────────────────────────── */
@@ -122,7 +122,7 @@ class Router {
                 case 'home':
                     lanzarConfettiInicio(); 
                     break;
-                case 'dashboard':
+                case 'dashboard': 
                     app.loadDashboard();
                     break;
                 case 'calendar':
@@ -149,7 +149,7 @@ class Router {
                     app.loadProfile();
                     break;
                 case 'new-challenge':
-                    const editing = JSON.parse(localStorage.getItem('editingChallenge') || 'null');
+                    const editing = JSON.parse(sessionStorage.getItem('editingChallenge') || 'null');
                     if (editing) {
                         setTimeout(() => {
                             document.getElementById('challenge-name').value = editing.name;
@@ -218,3 +218,4 @@ document.addEventListener('DOMContentLoaded', () => {
         router.navigate(path, true);
     }, 100);
 }); 
+

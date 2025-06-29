@@ -1,100 +1,94 @@
 class Auth {
-    constructor() {
-        this.users = JSON.parse(localStorage.getItem('users') || '[]');
+  constructor() {
+    this.users = []; 
+    this.loadUsers();
+  }
+
+  async loadUsers() {
+    this.users = await fetchUsers();
+  }
+
+  generateUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0,
+        v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  async register(name, email, password) {
+    await this.loadUsers(); // asegurarse de tener la lista más reciente
+    if (this.users.some(user => user.email === email)) {
+      throw new Error('El email ya está registrado');
     }
 
-    generateUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random() * 16 | 0,
-                v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+    const user = {
+      id: this.generateUID(),
+      name,
+      email,
+      password: this.hashPassword(password),
+      avatar: null,
+      stars: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    await insertUser(user);
+    await this.loadUsers(); // 🔁 vuelve a cargar desde Supabase
+
+    this.users.push(user);
+    this.login(email, password); // sesión en local
+  }
+
+  async login(email, password) {
+    await this.loadUsers();
+    const user = this.users.find(u => u.email === email);
+    if (!user || user.password !== this.hashPassword(password)) {
+      throw new Error('Credenciales inválidas');
     }
 
-    register(name, email, password) {
-        // Validar que el email no esté en uso
-        if (this.users.some(user => user.email === email)) {
-            throw new Error('El email ya está registrado');
-        }
+    const session = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      stars: user.stars || 0,
+      lastStarDate: user.lastStarDate || null
 
-        // Crear nuevo usuario
-        const user = {
-            id: this.generateUID(),
-            name,
-            email,
-            password: this.hashPassword(password),
-            avatar: null,
-            stars: 0, 
-            createdAt: new Date().toISOString()
-        };
+    };
 
+    sessionStorage.setItem('user', JSON.stringify(session));
+    router.navigate('dashboard');
+  }
 
-        // Guardar usuario
-        this.users.push(user);
-        localStorage.setItem('users', JSON.stringify(this.users));
+  logout() {
+    sessionStorage.removeItem('user');
+    app.currentUser = null;
+    router.navigate('home');
+  }
 
-        // Iniciar sesión automáticamente
-        this.login(email, password);
-    }
-
-    login(email, password) {
-        const user = this.users.find(u => u.email === email);
-        if (!user || user.password !== this.hashPassword(password)) {
-            throw new Error('Credenciales inválidas');
-        }
-
-        // Guardar sesión
-        const session = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            avatar: user.avatar,
-            stars: user.stars || 0
-        };
-
-
-        localStorage.setItem('user', JSON.stringify(session));
-        router.navigate('dashboard');
-    }
-
-    logout() {
-        localStorage.removeItem('user');
-        app.currentUser = null; // Clear the current user in the app
-        router.navigate('home');
-    }
-
-    hashPassword(password) {
-        // En producción usar bcrypt o similar
-        return btoa(password);
-    }
+  hashPassword(password) {
+    return btoa(password); // simple para desarrollo
+  }
 }
 
 // Initialize auth
 const auth = new Auth();
 
-// Handle registration form submission
+// Formularios
 function handleRegister(event) {
-    event.preventDefault();
-    const name = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
+  event.preventDefault();
+  const name = document.getElementById('register-name').value;
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
 
-    try {
-        auth.register(name, email, password);
-    } catch (error) {
-        alert(error.message);
-    }
+  auth.register(name, email, password).catch(error => alert(error.message));
 }
 
-// Handle login form submission
 function handleLogin(event) {
-    event.preventDefault();
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+  event.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
 
-    try {
-        auth.login(email, password);
-    } catch (error) {
-        alert(error.message);
-    }
-} 
+  auth.login(email, password).catch(error => alert(error.message));
+}
+

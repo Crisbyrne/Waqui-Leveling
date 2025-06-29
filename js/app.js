@@ -1,6 +1,5 @@
 class App {
     constructor() {
-        this.challenges = JSON.parse(localStorage.getItem('challenges') || '[]');
         this.currentUser = null;
         
         // Enhanced iOS detection
@@ -59,9 +58,12 @@ class App {
         }
     }
 
-   loadDashboard() {
+async loadDashboard() {
     // 🆕 Reinicia los retos diarios si ha cambiado el día
     challengeManager.resetDailyChallenges();  
+    await challengeManager.loadChallenges();
+    this.createChallengeCard;
+
 
     const challenges = challengeManager.getUserChallenges();
     const container = document.querySelector('.challenges-container');
@@ -108,35 +110,50 @@ loadCalendar() {
 
 
 
-    loadProfile() {
-        const user = this.getCurrentUser();
-        if (!user) return;
+async loadProfile() {
+  const localUser = this.getCurrentUser();
+  if (!localUser) return;
 
-        const container = document.querySelector('.profile-container');
-        if (!container) return;
-
-        container.innerHTML = `
-            <div class="profile-header">
-            <img src="${this.getAvatarBasedOnStreak(user)}" alt="Avatar" class="profile-avatar">
-                <h2>${user.name}</h2>
-                <p>${user.email}</p>
-                <p>⭐= ${user.stars || 0}</p>
-
-            </div>
-
-            <div class="form-container">
-                <div class="form-group">
-                    <label>Nombre</label>
-                    <input type="text" id="profile-name" value="${user.name}">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="profile-email" value="${user.email}" disabled>
-                </div>
-                <button onclick="app.updateProfile()" class="btn primary">Guardar Cambios</button>
-            </div>
-        `;
+  // 1️⃣ Consultar desde Supabase para obtener la última versión
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${localUser.id}`, {
+    headers: {
+      apikey: SUPABASE_API_KEY,
+      Authorization: `Bearer ${SUPABASE_API_KEY}`
     }
+  });
+  const [user] = await res.json();
+  if (!user) return;
+
+  // 2️⃣ Actualizar sesión local y objeto actual
+  sessionStorage.setItem('user', JSON.stringify(user));
+  this.currentUser = user;
+
+  // 3️⃣ Mostrar datos
+  const container = document.querySelector('.profile-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="profile-header">
+      <img src="${this.getAvatarBasedOnStreak(user)}" alt="Avatar" class="profile-avatar">
+      <h2>${user.name}</h2>
+      <p>${user.email}</p>
+      <p>⭐= ${user.stars || 0}</p>
+    </div>
+
+    <div class="form-container">
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="profile-name" value="${user.name}">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="profile-email" value="${user.email}" disabled>
+      </div>
+      <button onclick="app.updateProfile()" class="btn primary">Guardar Cambios</button>
+    </div>
+  `;
+}
+
 
 createChallengeCard(challenge) {
     const progress = this.calculateProgress(challenge);
@@ -169,21 +186,29 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
             ${challenge.participants
                 .filter(pid => pid !== app.getCurrentUser().id)
                 .map(pid => {
-                    const other = challengeManager.challenges.find(c => c.userId === pid && c.sharedId === challenge.sharedId);
-                    const user = auth.users.find(u => u.id === pid);
-                    const name = user?.name || 'Invitado';
-                    const p = other?.progress || 0;
-                    const goal = other?.goalPerInterval || 0;
-                    const percent = goal > 0 ? Math.min(100, Math.round((p / goal) * 100)) : 0;
+                    // Busca el reto de ese usuario con el mismo sharedId
+                    const userChallenge = challengeManager.challenges.find(
+                  c => c.userId === pid && c.sharedId === challenge.sharedId
+                );
 
-                    return `
-                        <div class="participant-horizontal">
-                            <span class="participant-name">${name}</span>
-                            <div class="horizontal-bar">
-                                <div class="horizontal-fill" style="width: ${percent}%"></div>
-                            </div>
-                            <span class="participant-percent">${percent}%</span>
-                        </div>
+                if (!userChallenge) return '';
+
+                    const user = auth.users.find(u => u.id === pid);
+                const name = user?.name || 'Invitado';
+                const progress = userChallenge.progress || 0;
+                const goal = userChallenge.goalPerInterval || 0;
+                const percent = goal > 0
+                  ? Math.min(100, Math.round((progress / goal) * 100))
+                  : 0;
+
+                return `
+                  <div class="participant-horizontal">
+                      <span class="participant-name">${name}</span>
+                      <div class="horizontal-bar">
+                          <div class="horizontal-fill" style="width: ${percent}%"></div>
+                      </div>
+                      <span class="participant-percent">${percent}%</span>
+                  </div>
                     `;
                 }).join('')}
         </div>
@@ -220,10 +245,13 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
 
                         <button onclick="challengeManager.updateProgress('${challenge.id}')" class="btn secondary2">Actualizar Progreso</button>
             <div class="challenge-actions">
+                 <button onclick="challengeManager.loadChallenges().then(() => router.navigate('dashboard'))" title="Refrescar">⟲</button>
+
                 <button onclick="editChallenge('${challenge.id}')" class="btn-icon edit-btn" title="Editar">✏️</button>
                 <button onclick="deleteChallenge('${challenge.id}')" class="btn-icon delete-btn" title="Eliminar">🗑️</button>
             </div>
         </div>
+
     `;
 
     setTimeout(() => drawCircularProgress(`progress-${challenge.id}`, progress), 0);
@@ -241,7 +269,7 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
     
     
 
-    createCalendarDays(days) {
+createCalendarDays(days) {
         return days.map(day => {
             const hasProgress = day && this.hasProgressOnDay(new Date(2024, new Date().getMonth(), day));
             return `
@@ -250,7 +278,7 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
                 </div>
             `;
         }).join('');
-    }
+}
 
     getMonthName(month) {
         const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
@@ -258,7 +286,7 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
         return months[month];
     }
 
-    calculateProgress(challenge) {
+calculateProgress(challenge) {
         const goal = parseFloat(challenge.goalPerInterval) || 0;
 
         // 🟨 Para retos diarios, mostrar solo el progreso del día
@@ -283,28 +311,30 @@ const otherProgressHTML = (challenge.type === 'colaborativo' && challenge.partic
         return challengeManager.getUserChallenges();
     }
 
-    getCurrentUser() {
+getCurrentUser() {
         if (!this.currentUser) {
-            const userData = localStorage.getItem('user');
+            const userData = sessionStorage.getItem('user');
             this.currentUser = userData ? JSON.parse(userData) : null;
         }
         return this.currentUser;
-    }
+}
 
-    updateProfile() {
-        const user = this.getCurrentUser();
-        if (!user) return;
+async updateProfile() {
+  const user = this.getCurrentUser();
+  if (!user) return;
 
-        const newName = document.getElementById('profile-name').value;
-        user.name = newName;
+  const newName = document.getElementById('profile-name').value;
+  user.name = newName;
 
-        localStorage.setItem('user', JSON.stringify(user));
-        this.currentUser = user;
+  await updateUserInSupabase(user); // ← actualiza en Supabase
+  sessionStorage.setItem('user', JSON.stringify(user)); // ← sincroniza sesión local
+  this.currentUser = user;
 
-        alert('Perfil actualizado correctamente');
-    }
+  alert('Perfil actualizado correctamente');
+}
 
-    getAvatarBasedOnStreak(user) {
+
+getAvatarBasedOnStreak(user) {
     const streak = user.streak || 0;
 
     // Si tiene una racha de 4 o más días, usa avatar especial
@@ -389,3 +419,13 @@ function getCompletedDays() {
 }
 
 
+app.renderDashboard = function () {
+  const container = document.getElementById('dashboard-container');
+  container.innerHTML = '';
+
+  const challenges = challengeManager.getUserChallenges(); // ← ya debe estar filtrado correctamente
+
+  challenges.forEach(ch => {
+    container.innerHTML += this.createChallengeCard(ch);
+  });
+};

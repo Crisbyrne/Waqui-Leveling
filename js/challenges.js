@@ -1,7 +1,18 @@
 class ChallengeManager {
-    constructor() {
-        this.challenges = JSON.parse(localStorage.getItem('challenges') || '[]');
-    }
+  constructor() {
+    this.challenges = [];
+    this.loadChallenges(); // ← cargar desde Supabase
+  }
+
+  async loadChallenges() {
+    const user = app.getCurrentUser();
+    if (!user) return;
+
+    const allChallenges = await fetchChallenges();
+    this.challenges = allChallenges.filter(c => 
+      c.userId === user.id || (Array.isArray(c.participants) && c.participants.includes(user.id))
+    );
+  }
 
     generateUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -11,144 +22,166 @@ class ChallengeManager {
         });
     }
 
-    createChallenge(data) {
-    const user = app.getCurrentUser();
-    if (!user) throw new Error('Usuario no autenticado');
+async createChallenge(data) {
+  const user = app.getCurrentUser();
+  if (!user) throw new Error('Usuario no autenticado');
 
-    const sharedId = this.generateUID(); // ID común entre todos los participantes
+  const sharedId = this.generateUID();
+  const allParticipants = data.participants || [user.id];
+  const icon = data.icon;
 
-    const allParticipants = data.participants || [user.id];
-    const icon = data.icon;
+  const tipoApuesta = document.getElementById('apuesta-tipo').value;
+  const montoApuesta = document.getElementById('apuesta-detalle').value;
+  const monedaApuesta = document.getElementById('apuesta-moneda').value;
 
-    const tipoApuesta = document.getElementById('apuesta-tipo').value;
-    const montoApuesta = document.getElementById('apuesta-detalle').value;
-    const monedaApuesta = document.getElementById('apuesta-moneda').value;
-
-    const apuesta = (tipoApuesta && montoApuesta)
+  const apuesta = (tipoApuesta && montoApuesta)
     ? {
-        tipo: tipoApuesta, // 'amigos' o 'plataforma'
+        tipo: tipoApuesta,
         detalle: {
-            monto: parseFloat(montoApuesta),
-            moneda: monedaApuesta // 'plata' o 'estrellas'
+          monto: parseFloat(montoApuesta),
+          moneda: monedaApuesta
         }
-        }
+      }
     : null;
 
+  for (const participantId of allParticipants) {
+    const challenge = {
+      id: this.generateUID(),
+      sharedId,
+      userId: participantId,
+      name: data.name,
+      description: data.description,
+      type: data.type,
+      unit: data.unit,
+      goalPerInterval: parseFloat(data.goalPerInterval),
+      interval: data.interval,
+      deadline: data.deadline,
+      category: data.category,
+      icon,
+      participants: allParticipants,
+      progress: 0,
+      streak: 0,
+      createdAt: new Date().toISOString(),
+      lastResetDate: new Date().toDateString(),
+      history: [],
+      apuesta
+    };
 
-    allParticipants.forEach(participantId => {
-        const challenge = {
-            id: this.generateUID(), // único por participante
-            sharedId: sharedId,
-            userId: participantId,
-            name: data.name,
-            description: data.description,
-            type: data.type,
-            unit: data.unit,
-            goalPerInterval: parseFloat(data.goalPerInterval),
-            interval: data.interval,
-            deadline: data.deadline,
-            category: data.category,
-            icon: icon,
-            participants: allParticipants,
-            progress: 0,
-            streak: 0,
-            createdAt: new Date().toISOString(),
-            lastResetDate: new Date().toDateString(),
-            history: [],
-            apuesta
-        };
-
-        this.challenges.push(challenge);
-    });
-
-    this.saveChanges();
+    this.challenges.push(challenge);
+    await insertChallenge(challenge); // ← subir a Supabase
+  }
 }
 
 
-    
-updateProgress(challengeId) {
+
+//updatear reto
+async updateProgress(challengeId) {
   const challenge = this.getChallenge(challengeId);
   if (!challenge) return alert('Reto no encontrado o no tienes permiso');
 
-  /* ───── ①  Referencias al modal ───── */
-  const modal    = document.getElementById('progress-modal');
-  const titleEl  = document.getElementById('modal-title');
-  const currEl   = document.getElementById('current-progress');
-  const addEl    = document.getElementById('added-progress');
-  const saveBtn  = document.getElementById('save-progress');
-  const cancelBtn= document.getElementById('cancel-progress');
+  const modal = document.getElementById('progress-modal');
+  const titleEl = document.getElementById('modal-title');
+  const currEl = document.getElementById('current-progress');
+  const addEl = document.getElementById('added-progress');
+  const saveBtn = document.getElementById('save-progress');
+  const cancelBtn = document.getElementById('cancel-progress');
 
-  /* ───── ②  Rellenar datos actuales ───── */
   let current = challenge.progress || 0;
   if (challenge.interval === 'daily') {
     const today = new Date().toDateString();
     const entry = challenge.history?.find(h => new Date(h.date).toDateString() === today);
     current = entry ? entry.progress : 0;
   }
+
   titleEl.textContent = `Actualizar "${challenge.name}" (${challenge.unit})`;
-  currEl.value  = current;
-  addEl.value   = '';
+  currEl.value = current;
+  addEl.value = '';
   modal.style.display = 'flex';
 
-  /* ───── ③  Handler GUARDAR ───── */
- saveBtn.onclick = () => {
-  /* valores del formulario */
-  const nuevoActual = parseFloat(currEl.value)  || 0;   // el campo editable
-  const sumaExtra  = parseFloat(addEl.value)   || 0;   // lo que escribió en “agregar”
-  const totalHoy   = nuevoActual + sumaExtra;           // valor final para hoy
-  if (totalHoy < 0) return alert('El progreso no puede ser negativo');
+saveBtn.onclick = async () => {
+  // Si se agregó algo extra, sumarlo al valor actual
+  const progresoBase = challenge.progress || 0;
+  const sumaExtra = parseFloat(addEl.value) || 0;
+
+  let nuevoProgreso;
+
+  if (!isNaN(sumaExtra) && sumaExtra !== 0) {
+    nuevoProgreso = progresoBase + sumaExtra;
+    currEl.value = nuevoProgreso; // mostrarlo actualizado
+  } else {
+    nuevoProgreso = parseFloat(currEl.value) || 0;
+  }
 
   const todayStr = new Date().toDateString();
   let todayEntry = challenge.history.find(h => new Date(h.date).toDateString() === todayStr);
 
   if (todayEntry) {
-    todayEntry.progress = totalHoy;            // ← se establece el valor final
+    todayEntry.progress = nuevoProgreso;
   } else {
-    todayEntry = { date: new Date().toISOString(), progress: totalHoy };
+    todayEntry = { date: new Date().toISOString(), progress: nuevoProgreso };
     challenge.history.push(todayEntry);
   }
 
-  /* actualiza la propiedad global */
   challenge.progress = (challenge.interval === 'daily')
-    ? totalHoy
-    : (challenge.progress - (todayEntry.progress - totalHoy) + totalHoy);
+    ? nuevoProgreso
+    : challenge.history.reduce((sum, h) => sum + (h.progress || 0), 0);
 
   challenge.lastResetDate = todayStr;
-  this.saveChanges();
 
-  /* refresca tarjeta */
-  const card = document.querySelector(`[data-id="${challengeId}"]`);
-  if (card) card.outerHTML = app.createChallengeCard(challenge);
+    // Estrellas
+    const goal = parseFloat(challenge.goalPerInterval) || 0;
+    const user = app.getCurrentUser();
+    if (nuevoProgreso >= goal && user.lastStarDate !== todayStr) {
+      user.stars = (user.stars || 0) + 1;
+      user.lastStarDate = todayStr;
 
-  /* estrellas (si alcanzó la meta) */
-  const goal = parseFloat(challenge.goalPerInterval) || 0;
-  const user = app.getCurrentUser();
-  if (totalHoy >= goal && user.lastStarDate !== todayStr) {
-    user.stars = (user.stars || 0) + 1;
-    user.lastStarDate = todayStr;
+      const updatedUser = {
+        ...user,
+        stars: user.stars,
+        lastStarDate: user.lastStarDate
+      };
 
-    const allUsers = auth.users;
-    allUsers[allUsers.findIndex(u => u.id === user.id)] = user;
-    localStorage.setItem('users', JSON.stringify(allUsers));
-    localStorage.setItem('user',  JSON.stringify(user));
+      await updateUserInSupabase(updatedUser); // ← asegúrate de tener esta función
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+
+    await updateChallenge(challenge); // ← actualiza en Supabase
+
+    const card = document.querySelector(`[data-id="${challengeId}"]`);
+    if (card) card.outerHTML = app.createChallengeCard(challenge);
+
+    if (location.hash === '#calendar') app.loadCalendar();
+    modal.style.display = 'none';
+  };
+
+  cancelBtn.onclick = () => (modal.style.display = 'none');
+}
+
+//eliminar reto
+async deleteChallenge(challengeId) {
+  const index = this.challenges.findIndex(c => c.id === challengeId);
+  if (index === -1) {
+    throw new Error('Reto no encontrado');
   }
 
-  if (location.hash === '#calendar') app.loadCalendar();
-  modal.style.display = 'none';
-};
+  const user = app.getCurrentUser();
+  if (!user || this.challenges[index].userId !== user.id) {
+    throw new Error('No tienes permiso para eliminar este reto');
+  }
 
+  const confirmed = confirm("¿Estás seguro de que quieres eliminar este reto? Esta acción no se puede deshacer.");
+  if (!confirmed) return;
 
-  /* ───── ④  Handler CANCELAR ───── */
-  cancelBtn.onclick = () => (modal.style.display = 'none');
+  this.challenges.splice(index, 1);
+  await deleteChallengeFromSupabase(challengeId);
 }
 
 
 
-
     
     
 
-    getExpectedProgress(challenge) {
+getExpectedProgress(challenge) {
         if (!challenge.goalPerInterval || !challenge.interval) return null;
 
         const start = new Date(challenge.createdAt);
@@ -169,60 +202,43 @@ updateProgress(challengeId) {
         }
 
         return intervalsPassed * challenge.goalPerInterval;
-    }
+}
 
-    getUserChallenges() {
+getUserChallenges() {
         const user = app.getCurrentUser();
         if (!user || !user.id) return [];
 
         return this.challenges.filter(challenge => challenge.userId === user.id);
-    }
+}
 
-    getChallenge(challengeId) {
+getChallenge(challengeId) {
         const user = app.getCurrentUser();
         if (!user || !user.id) return null;
 
         const challenge = this.challenges.find(c => c.id === challengeId);
         return challenge && challenge.userId === user.id ? challenge : null;
-    }
-
-    deleteChallenge(challengeId) {
-        const index = this.challenges.findIndex(c => c.id === challengeId);
-        if (index === -1) {
-            throw new Error('Reto no encontrado');
-        }
-
-        const user = app.getCurrentUser();
-        if (!user || this.challenges[index].userId !== user.id) {
-            throw new Error('No tienes permiso para eliminar este reto');
-        }
-
-        this.challenges.splice(index, 1);
-        this.saveChanges();
-    }
-
-    saveChanges() {
-        localStorage.setItem('challenges', JSON.stringify(this.challenges));
-    }
-
-resetDailyChallenges() {
-    const today = new Date().toDateString();
-
-    this.challenges.forEach(challenge => {
-        if (challenge.interval === 'daily' && challenge.lastResetDate !== today) {
-            if (challenge.progress >= challenge.goalPerInterval) {
-                challenge.streak = (challenge.streak || 0) + 1;
-            } else {
-                challenge.streak = 0;
-            }
-
-            challenge.progress = 0;
-            challenge.lastResetDate = today;
-        }
-    });
-
-    this.saveChanges();
 }
+
+
+async resetDailyChallenges() {
+  const today = new Date().toDateString();
+
+  for (const challenge of this.challenges) {
+    if (challenge.interval === 'daily' && challenge.lastResetDate !== today) {
+      if (challenge.progress >= challenge.goalPerInterval) {
+        challenge.streak = (challenge.streak || 0) + 1;
+      } else {
+        challenge.streak = 0;
+      }
+
+      challenge.progress = 0;
+      challenge.lastResetDate = today;
+
+      await updateChallenge(challenge); // ← actualizar en Supabase
+    }
+  }
+}
+
 
 
 
@@ -234,10 +250,10 @@ const challengeManager = new ChallengeManager();
 
 // Manejar envío del formulario para crear un reto
 /* ---------- handleNewChallenge ---------- */
-function handleNewChallenge(event) {
+async function handleNewChallenge(event) {
     event.preventDefault();
 
-    const isEditing = !!localStorage.getItem('editingChallenge');
+    const isEditing = !!sessionStorage.getItem('editingChallenge');
 
     const categorySelect = document.getElementById('challenge-category').value;
     const customCategory = document.getElementById('custom-category').value.trim();
@@ -260,7 +276,11 @@ function handleNewChallenge(event) {
                 .map(e => e.trim())
                 .filter(e => e !== '');
 
+
+
+            await auth.loadUsers(); // recarga desde Supabase
             const allUsers = auth.users;
+
 
             participantEmails.forEach(email => {
                 const user = allUsers.find(u => u.email === email);
@@ -286,17 +306,18 @@ function handleNewChallenge(event) {
     };
 
     if (isEditing) {
-        const challenge = JSON.parse(localStorage.getItem('editingChallenge'));
+        const challenge = JSON.parse(sessionStorage.getItem('editingChallenge'));
         const index = challengeManager.challenges.findIndex(c => c.id === challenge.id);
         if (index !== -1) {
             challengeManager.challenges[index] = {
                 ...challengeManager.challenges[index],
                 ...data
             };
-            challengeManager.saveChanges();
-            localStorage.removeItem('editingChallenge');
-            router.navigate('dashboard');
-            return;
+          await updateChallenge(challengeManager.challenges[index]);  // ✅ actualización real
+          await challengeManager.loadChallenges();                    // ✅ recargar desde Supabase
+          sessionStorage.removeItem('editingChallenge');
+          router.navigate('dashboard');                               // ✅ forzar redirección
+          return;
         }
     }
 
@@ -362,32 +383,43 @@ function renderChallenge(challenge) {
     `;
 
     // Agregar progreso de compañeros si es colaborativo
-    if (challenge.type === 'colaborativo' && challenge.participants?.length > 1) {
-        challengeHTML += `<div><strong>Avance de compañeros:</strong></div>`;
-        
-        challenge.participants.forEach(pid => {
-            if (pid !== currentUser.id) {
-                const user = auth.users.find(u => u.id === pid);
-                const userName = user?.name || user?.email || 'Usuario';
-                const userProgress = challenge.progress?.[pid] || 0;
-                const userPercent = (goal > 0)
-                    ? Math.min(100, Math.round((userProgress / goal) * 100))
-                    : 0;
+    console.log("✅ Entrando al render de avances colaborativos");
 
-                challengeHTML += `
-                    <div style="margin-top: 4px;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>${userName}</span>
-                            <span>${userPercent}%</span>
-                        </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" style="width: ${userPercent}%; background-color: #6a1b9a;"></div>
-                        </div>
-                    </div>
-                `;
-            }
-        });
+if (challenge.type === 'colaborativo' && challenge.participants?.length > 1) {
+  challengeHTML += `<div><strong>Avance de compañeros:</strong></div>`;
+
+  // Obtener todos los retos del grupo colaborativo
+  const retosDelGrupo = challengeManager.challenges.filter(c => c.sharedId === challenge.sharedId);
+  console.log("🔍 Retos del grupo:", retosDelGrupo);
+
+  for (const c of retosDelGrupo) {
+    if (c.userId !== currentUser.id) {
+      const user = auth.users.find(u => u.id === c.userId);
+      const userName = user?.name || user?.email || 'Usuario';
+      const userProgress = c.progress || 0;
+      const goal = c.goalPerInterval || 0;
+      console.log(`👤 ${userName}: progreso = ${c.progress}, meta = ${c.goalPerInterval}`);
+
+      const percent = goal > 0
+        ? Math.min(100, Math.round((userProgress / goal) * 100))
+        : 0;
+      
+      challengeHTML += `
+        <div style="margin-top: 4px;">
+          <div style="display: flex; justify-content: space-between;">
+            <span>${userName}</span>
+            <span>${percent}%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" style="width: ${percent}%; background-color: #6a1b9a;"></div>
+          </div>
+        </div>
+      `;
     }
+  }
+}
+
+
 
     challengeHTML += `</div>`; // Cerrar .challenge-card
     return challengeHTML;
@@ -398,27 +430,24 @@ function renderChallenge(challenge) {
 
     // Editar y eliminar retos
 
-function deleteChallenge(challengeId) {
-    if (!confirm("¿Estás seguro de que quieres eliminar este reto? Esta acción no se puede deshacer.")) return;
 
-    try {
-        challengeManager.deleteChallenge(challengeId);
-        app.loadDashboard();  // Recargar después de eliminar
-    } catch (error) {
-        alert('Error al eliminar el reto: ' + error.message);
-    }
-}
+
 
 function editChallenge(challengeId) {
     const challenge = challengeManager.getChallenge(challengeId);
     if (!challenge) return alert("Reto no encontrado");
 
     // 🟢 Guardar en localStorage para precargar el formulario
-    localStorage.setItem('editingChallenge', JSON.stringify(challenge));
+    sessionStorage.setItem('editingChallenge', JSON.stringify(challenge));
 
     // 🟢 Navegar al formulario de edición (el mismo que crear reto)
     router.navigate('new-challenge');
 }
+
+function getUserChallenges() {
+  return this.challenges; // ya están filtrados en loadChallenges()
+}
+
 
 
 
